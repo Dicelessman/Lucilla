@@ -13,7 +13,7 @@ import {
   Square,
 } from 'lucide-react';
 import { ChatAction, ChatMessage } from '../types/coach.ts';
-import { LiveStatus } from '../hooks/useLiveVoice.ts';
+import { LiveStatus, VoiceTransport } from '../hooks/useLiveVoice.ts';
 
 interface CoachChatPanelProps {
   messages: ChatMessage[];
@@ -21,8 +21,11 @@ interface CoachChatPanelProps {
   onTriggerAction: (action: ChatAction['type']) => void;
   isSending: boolean;
   liveStatus: LiveStatus;
+  voiceTransport?: VoiceTransport;
   isMuted: boolean;
   isModelSpeaking: boolean;
+  isRecordingTurn?: boolean;
+  isProcessingTurn?: boolean;
   liveUserTranscript: string;
   liveModelTranscript: string;
   liveError: string | null;
@@ -31,6 +34,8 @@ interface CoachChatPanelProps {
   onStopLiveCall: () => void;
   onToggleMute: () => void;
   onSendLiveText: (text: string) => void;
+  onSendVoiceTurn?: () => void;
+  onStartNextVoiceTurn?: () => void;
   externalRadioOpen?: boolean;
   getIdToken?: () => Promise<string | null>;
 }
@@ -49,8 +54,11 @@ export function CoachChatPanel({
   onTriggerAction,
   isSending,
   liveStatus,
+  voiceTransport = 'websocket',
   isMuted,
   isModelSpeaking,
+  isRecordingTurn = false,
+  isProcessingTurn = false,
   liveUserTranscript,
   liveModelTranscript,
   liveError,
@@ -59,6 +67,8 @@ export function CoachChatPanel({
   onStopLiveCall,
   onToggleMute,
   onSendLiveText,
+  onSendVoiceTurn,
+  onStartNextVoiceTurn,
   externalRadioOpen,
   getIdToken,
 }: CoachChatPanelProps) {
@@ -307,18 +317,28 @@ export function CoachChatPanel({
       {/* Live Voice Session Banner */}
       {(liveStatus === 'connecting' || liveStatus === 'active' || liveError || lastVoiceNotice) && (
         <div className="border-b border-[#E4E6E0] bg-[#EDF3F0] px-5 py-3 text-xs dark:border-[#2B3732] dark:bg-[#1F332C]">
-          {liveError ? (
-            <div className="flex items-center gap-2 font-medium text-[#991B1B] dark:text-[#FCA5A5]">
+          {liveError && (
+            <div className="mb-2 flex items-center gap-2 font-medium text-[#991B1B] dark:text-[#FCA5A5]">
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>{liveError}</span>
             </div>
-          ) : (
+          )}
+
+          {(liveStatus === 'connecting' || liveStatus === 'active') && (
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 font-medium text-[#182420] dark:text-[#EAECE6]">
                 <Radio className="h-4 w-4 text-[#1F6E5C] dark:text-[#36A68C]" />
                 <span>
                   {liveStatus === 'connecting'
                     ? 'Attivazione microfono e connessione vocale con Lucilla...'
+                    : voiceTransport === 'turn'
+                    ? isProcessingTurn
+                      ? 'Lucilla sta ascoltando e preparando la voce...'
+                      : isRecordingTurn
+                      ? 'Voce attiva · Parla ora, poi tocca "Invia a Lucilla"'
+                      : isModelSpeaking
+                      ? 'Lucilla sta rispondendo a voce...'
+                      : 'Pronto per il prossimo turno vocale'
                     : isMuted
                     ? 'Chiamata Live attiva · Microfono in pausa'
                     : isModelSpeaking
@@ -328,24 +348,52 @@ export function CoachChatPanel({
               </div>
 
               {liveStatus === 'active' && (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={onToggleMute}
-                    className="inline-flex items-center gap-1 rounded-md border border-[#C6D5CE] bg-white px-2.5 py-1 text-xs font-medium text-[#182420] hover:bg-[#F7F7F4] dark:border-[#33423C] dark:bg-[#1B231F] dark:text-[#EAECE6]"
-                  >
-                    {isMuted ? (
-                      <>
-                        <Mic className="h-3.5 w-3.5 text-[#1F6E5C] dark:text-[#36A68C]" />
-                        <span>Riattiva Mic</span>
-                      </>
-                    ) : (
-                      <>
-                        <MicOff className="h-3.5 w-3.5 text-[#5C6762] dark:text-[#A3B0AA]" />
-                        <span>Silenzia</span>
-                      </>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {voiceTransport === 'turn' && isRecordingTurn && onSendVoiceTurn && (
+                    <button
+                      type="button"
+                      onClick={onSendVoiceTurn}
+                      className="inline-flex items-center gap-1 rounded-md bg-[#1F6E5C] px-3 py-1 text-xs font-semibold text-white hover:bg-[#185849]"
+                    >
+                      <Send className="h-3 w-3" />
+                      <span>Invia a Lucilla</span>
+                    </button>
+                  )}
+
+                  {voiceTransport === 'turn' &&
+                    !isRecordingTurn &&
+                    !isProcessingTurn &&
+                    onStartNextVoiceTurn && (
+                      <button
+                        type="button"
+                        onClick={onStartNextVoiceTurn}
+                        className="inline-flex items-center gap-1 rounded-md bg-[#1F6E5C] px-3 py-1 text-xs font-semibold text-white hover:bg-[#185849]"
+                      >
+                        <Mic className="h-3 w-3" />
+                        <span>Parla ancora</span>
+                      </button>
                     )}
-                  </button>
+
+                  {voiceTransport === 'websocket' && (
+                    <button
+                      type="button"
+                      onClick={onToggleMute}
+                      className="inline-flex items-center gap-1 rounded-md border border-[#C6D5CE] bg-white px-2.5 py-1 text-xs font-medium text-[#182420] hover:bg-[#F7F7F4] dark:border-[#33423C] dark:bg-[#1B231F] dark:text-[#EAECE6]"
+                    >
+                      {isMuted ? (
+                        <>
+                          <Mic className="h-3.5 w-3.5 text-[#1F6E5C] dark:text-[#36A68C]" />
+                          <span>Riattiva Mic</span>
+                        </>
+                      ) : (
+                        <>
+                          <MicOff className="h-3.5 w-3.5 text-[#5C6762] dark:text-[#A3B0AA]" />
+                          <span>Silenzia</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={onStopLiveCall}

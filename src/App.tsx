@@ -231,8 +231,29 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
     []
   );
 
+  const handleTurnVoiceMessages = useCallback(
+    (messages: ChatMessage[], uiCommand?: LiveUiCommand) => {
+      setState((prev) => ({
+        ...prev,
+        chatHistory: mergeUniqueMessages(prev.chatHistory, messages),
+      }));
+      if (uiCommand?.tab) {
+        setActiveTab(uiCommand.tab);
+      }
+      if (uiCommand?.openSosModal) {
+        setSosOpen(true);
+      }
+      if (uiCommand?.openRadioBorbottona) {
+        setActiveTab('oggi');
+        setRadioOpenSignal(true);
+      }
+    },
+    []
+  );
+
   const liveVoice = useLiveVoice({
     onStateUpdate: handleVoiceStateUpdate,
+    onTurnMessages: handleTurnVoiceMessages,
     getIdToken,
   });
 
@@ -706,7 +727,15 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
             <div className="flex items-center gap-2 font-medium text-[#182420] dark:text-[#EAECE6]">
               <Radio className="h-4 w-4 text-[#1F6E5C] dark:text-[#36A68C]" />
               <span>
-                {liveVoice.isMuted
+                {liveVoice.voiceTransport === 'turn'
+                  ? liveVoice.isProcessingTurn
+                    ? 'Voce con Lucilla · Elaborazione risposta...'
+                    : liveVoice.isRecordingTurn
+                    ? 'Voce con Lucilla · In ascolto del tuo turno'
+                    : liveVoice.isModelSpeaking
+                    ? 'Voce con Lucilla · Sta rispondendo...'
+                    : 'Voce con Lucilla · Pronto'
+                  : liveVoice.isMuted
                   ? 'Chiamata Live con Lucilla · Microfono in pausa'
                   : liveVoice.isModelSpeaking
                   ? 'Chiamata Live con Lucilla · Sta parlando...'
@@ -719,14 +748,37 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={liveVoice.toggleMute}
-                className="inline-flex items-center gap-1 rounded-md border border-[#C6D5CE] bg-white px-2.5 py-1 font-medium text-[#182420] dark:border-[#33423C] dark:bg-[#1B231F] dark:text-[#EAECE6]"
-              >
-                {liveVoice.isMuted ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
-                <span>{liveVoice.isMuted ? 'Riattiva' : 'Silenzia'}</span>
-              </button>
+              {liveVoice.voiceTransport === 'turn' && liveVoice.isRecordingTurn && (
+                <button
+                  type="button"
+                  onClick={liveVoice.sendVoiceTurn}
+                  className="inline-flex items-center gap-1 rounded-md bg-[#1F6E5C] px-2.5 py-1 font-semibold text-white"
+                >
+                  <span>Invia a Lucilla</span>
+                </button>
+              )}
+              {liveVoice.voiceTransport === 'turn' &&
+                !liveVoice.isRecordingTurn &&
+                !liveVoice.isProcessingTurn && (
+                  <button
+                    type="button"
+                    onClick={liveVoice.startNextVoiceTurn}
+                    className="inline-flex items-center gap-1 rounded-md bg-[#1F6E5C] px-2.5 py-1 font-semibold text-white"
+                  >
+                    <Mic className="h-3.5 w-3.5" />
+                    <span>Parla ancora</span>
+                  </button>
+                )}
+              {liveVoice.voiceTransport === 'websocket' && (
+                <button
+                  type="button"
+                  onClick={liveVoice.toggleMute}
+                  className="inline-flex items-center gap-1 rounded-md border border-[#C6D5CE] bg-white px-2.5 py-1 font-medium text-[#182420] dark:border-[#33423C] dark:bg-[#1B231F] dark:text-[#EAECE6]"
+                >
+                  {liveVoice.isMuted ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
+                  <span>{liveVoice.isMuted ? 'Riattiva' : 'Silenzia'}</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={liveVoice.stopCall}
@@ -827,8 +879,11 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
                   onTriggerAction={handleTriggerAction}
                   isSending={isSendingChat}
                   liveStatus={liveVoice.status}
+                  voiceTransport={liveVoice.voiceTransport}
                   isMuted={liveVoice.isMuted}
                   isModelSpeaking={liveVoice.isModelSpeaking}
+                  isRecordingTurn={liveVoice.isRecordingTurn}
+                  isProcessingTurn={liveVoice.isProcessingTurn}
                   liveUserTranscript={liveVoice.liveUserTranscript}
                   liveModelTranscript={liveVoice.liveModelTranscript}
                   liveError={liveVoice.errorMessage}
@@ -837,6 +892,8 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
                   onStopLiveCall={liveVoice.stopCall}
                   onToggleMute={liveVoice.toggleMute}
                   onSendLiveText={liveVoice.sendLiveText}
+                  onSendVoiceTurn={liveVoice.sendVoiceTurn}
+                  onStartNextVoiceTurn={liveVoice.startNextVoiceTurn}
                   externalRadioOpen={radioOpenSignal}
                   getIdToken={getIdToken}
                 />

@@ -353,6 +353,13 @@ export function createApiApp() {
     res.json({ ok: true });
   });
 
+  app.get('/api/capabilities', (_req, res) => {
+    res.json({
+      liveWebsocket: !process.env.VERCEL,
+      voiceTurnHttp: true,
+    });
+  });
+
   // Protected one-time migration export of prior local JSON state
   app.get('/api/state', async (req, res) => {
     try {
@@ -371,58 +378,46 @@ export function createApiApp() {
     }
   });
 
-  app.post('/api/chat', async (req, res) => {
-    let verifiedUser: VerifiedFirebaseUser;
-    try {
-      verifiedUser = await requireVerifiedUser(req);
-    } catch (authErr) {
-      return res.status(401).json({
-        error: authErr instanceof Error ? authErr.message : 'Accesso non autorizzato.',
-      });
+  async function processLucillaChatTurn(
+    verifiedUser: VerifiedFirebaseUser,
+    rawMessage: string
+  ) {
+    const state = await fetchCoachStateFromFirestore(verifiedUser.uid, verifiedUser.idToken);
+    const today = new Date().toISOString().slice(0, 10);
+    const command = detectCommand(rawMessage);
+    const redFlags = detectRedFlags(rawMessage);
+    const slipUp = detectSlipUpPhrase(rawMessage);
+    const sosTriggered = detectSosPhrase(rawMessage) || command === '/sos';
+
+    const actions: ChatAction[] = [];
+    if (sosTriggered) {
+      actions.push({ type: 'open_sos', label: 'Avvia Protocollo SOS (4 Step)' });
+      actions.push({ type: 'radio_borbottona', label: 'Gioca con Radio Borbottona' });
+    }
+    if (command === '/ruota') {
+      actions.push({ type: 'open_ruota', label: 'Apri Ruota della Vita' });
+    }
+    if (command === '/report_bardho') {
+      actions.push({ type: 'open_report', label: 'Apri Report Dott.ssa Bardho' });
+    }
+    if (slipUp) {
+      actions.push({ type: 'open_diary', label: 'Pianifica Prossimo Pasto Regolare' });
     }
 
-    try {
-      const { message } = req.body as { message?: string };
-      if (!message || !message.trim()) {
-        return res.status(400).json({ error: 'Messaggio vuoto.' });
-      }
+    let replyText = '';
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey && apiKey !== 'MY_GEMINI_API_KEY') {
+      try {
+        const ai = new GoogleGenAI({
+          apiKey,
+          httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+        });
+        const recentHistory = state.chatHistory
+          .slice(-6)
+          .map((m) => `${m.role === 'user' ? 'Davide' : 'Lucilla'}: ${m.content}`)
+          .join('\n');
 
-      const state = await fetchCoachStateFromFirestore(verifiedUser.uid, verifiedUser.idToken);
-      const today = new Date().toISOString().slice(0, 10);
-      const command = detectCommand(message);
-      const redFlags = detectRedFlags(message);
-      const slipUp = detectSlipUpPhrase(message);
-      const sosTriggered = detectSosPhrase(message) || command === '/sos';
-
-      const actions: ChatAction[] = [];
-      if (sosTriggered) {
-        actions.push({ type: 'open_sos', label: 'Avvia Protocollo SOS (4 Step)' });
-        actions.push({ type: 'radio_borbottona', label: 'Gioca con Radio Borbottona' });
-      }
-      if (command === '/ruota') {
-        actions.push({ type: 'open_ruota', label: 'Apri Ruota della Vita' });
-      }
-      if (command === '/report_bardho') {
-        actions.push({ type: 'open_report', label: 'Apri Report Dott.ssa Bardho' });
-      }
-      if (slipUp) {
-        actions.push({ type: 'open_diary', label: 'Pianifica Prossimo Pasto Regolare' });
-      }
-
-      let replyText = '';
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (apiKey && apiKey !== 'MY_GEMINI_API_KEY') {
-        try {
-          const ai = new GoogleGenAI({
-            apiKey,
-            httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
-          });
-          const recentHistory = state.chatHistory
-            .slice(-6)
-            .map((m) => `${m.role === 'user' ? 'Davide' : 'Lucilla'}: ${m.content}`)
-            .join('\n');
-
-          const prompt = `${recentHistory ? `Conversazione recente:\n${recentHistory}\n\n` : ''}Messaggio attuale di Davide: "${message}"
+        const prompt = `${recentHistory ? `Conversazione recente:\n${recentHistory}\n\n` : ''}Messaggio attuale di Davide: "${rawMessage}"
 ${command ? `\nComando rapido attivato: ${command}` : ''}
 ${
   redFlags.length > 0
@@ -440,66 +435,193 @@ ${
     : ''
 }`;
 
-          const response = await ai.models.generateContent({
-            model: 'gemini-4-hydrogen',
-            contents: prompt,
-            config: {
-              systemInstruction: buildLucillaSystemInstruction(state, today, false),
-            },
-          });
+        const response = await ai.models.generateContent({
+          model: 'gemini-4-hydrogen',
+          contents: prompt,
+          config: {
+            systemInstruction: buildLucillaSystemInstruction(state, today, false),
+          },
+        });
 
-          if (response.text && response.text.trim()) {
-            replyText = response.text.trim();
-          }
-        } catch (aiError) {
-          console.error('Gemini API error, using rule-based NLP fallback:', aiError);
+        if (response.text && response.text.trim()) {
+          replyText = response.text.trim();
         }
+      } catch (aiError) {
+        console.error('Gemini API error, using rule-based NLP fallback:', aiError);
+      }
+    }
+
+    if (!replyText) {
+      replyText = buildFallbackReply(rawMessage, command, redFlags, slipUp, sosTriggered);
+    }
+
+    const nowTime = new Date().toLocaleTimeString('it-IT', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    const userMsg = {
+      id: makeUniqueMsgId('u'),
+      role: 'user' as const,
+      content: rawMessage.trim(),
+      timestamp: nowTime,
+      commandTriggered: command ?? undefined,
+    };
+
+    const assistantMsg = {
+      id: makeUniqueMsgId('a'),
+      role: 'assistant' as const,
+      content: replyText,
+      timestamp: nowTime,
+      commandTriggered: command ?? undefined,
+      redFlagTriggered: redFlags.length > 0,
+      slipUpReframed: slipUp,
+      actions: actions.length > 0 ? actions : undefined,
+    };
+
+    await appendChatMessagesViaRest(verifiedUser.uid, verifiedUser.idToken, [
+      userMsg,
+      assistantMsg,
+    ]);
+
+    return {
+      userMessage: userMsg,
+      assistantMessage: assistantMsg,
+      command,
+      redFlags,
+      slipUp,
+      sosTriggered,
+    };
+  }
+
+  app.post('/api/chat', async (req, res) => {
+    let verifiedUser: VerifiedFirebaseUser;
+    try {
+      verifiedUser = await requireVerifiedUser(req);
+    } catch (authErr) {
+      return res.status(401).json({
+        error: authErr instanceof Error ? authErr.message : 'Accesso non autorizzato.',
+      });
+    }
+
+    try {
+      const { message } = req.body as { message?: string };
+      if (!message || !message.trim()) {
+        return res.status(400).json({ error: 'Messaggio vuoto.' });
       }
 
-      if (!replyText) {
-        replyText = buildFallbackReply(message, command, redFlags, slipUp, sosTriggered);
-      }
-
-      const nowTime = new Date().toLocaleTimeString('it-IT', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-
-      const userMsg = {
-        id: makeUniqueMsgId('u'),
-        role: 'user' as const,
-        content: message.trim(),
-        timestamp: nowTime,
-        commandTriggered: command ?? undefined,
-      };
-
-      const assistantMsg = {
-        id: makeUniqueMsgId('a'),
-        role: 'assistant' as const,
-        content: replyText,
-        timestamp: nowTime,
-        commandTriggered: command ?? undefined,
-        redFlagTriggered: redFlags.length > 0,
-        slipUpReframed: slipUp,
-        actions: actions.length > 0 ? actions : undefined,
-      };
-
-      await appendChatMessagesViaRest(verifiedUser.uid, verifiedUser.idToken, [
-        userMsg,
-        assistantMsg,
-      ]);
-
-      res.json({
-        userMessage: userMsg,
-        assistantMessage: assistantMsg,
-        command,
-        redFlags,
-        slipUp,
-        sosTriggered,
-      });
+      const result = await processLucillaChatTurn(verifiedUser, message);
+      res.json(result);
     } catch (err) {
       console.error('POST /api/chat error:', err);
       res.status(500).json({ error: 'Errore nella risposta di Lucilla.' });
+    }
+  });
+
+  // Vercel Serverless-friendly Turn-by-Turn Voice endpoint (no persistent WebSocket needed)
+  app.post('/api/voice-turn', async (req, res) => {
+    let verifiedUser: VerifiedFirebaseUser;
+    try {
+      verifiedUser = await requireVerifiedUser(req);
+    } catch (authErr) {
+      return res.status(401).json({
+        error: authErr instanceof Error ? authErr.message : 'Accesso non autorizzato.',
+      });
+    }
+
+    try {
+      const { audioBase64, mimeType } = req.body as {
+        audioBase64?: string;
+        mimeType?: string;
+      };
+
+      if (!audioBase64 || typeof audioBase64 !== 'string') {
+        return res.status(400).json({ error: 'Audio vocale mancante.' });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+        return res.status(503).json({
+          error: 'Chiave GEMINI_API_KEY non configurata sul server per la chat vocale.',
+        });
+      }
+
+      const cleanBase64 = audioBase64.replace(/^data:audio\/[a-zA-Z0-9.+_-]+;base64,/, '');
+      const baseMime = (mimeType || 'audio/webm').split(';')[0].trim();
+      const safeMime = baseMime.startsWith('audio/') ? baseMime : 'audio/webm';
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+      });
+
+      const transcriptionRes = await ai.models.generateContent({
+        model: 'gemini-3.5-transcribe',
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                mimeType: safeMime,
+                data: cleanBase64,
+              },
+            },
+            {
+              text: 'Trascrivi fedelmente questo audio parlato in italiano. Restituisci solo la trascrizione testuale, senza commenti.',
+            },
+          ],
+        },
+      });
+
+      const transcript = (transcriptionRes.text ?? '').trim();
+      if (!transcript) {
+        return res.status(422).json({
+          error: 'Non ho colto parole chiare: avvicinati al microfono e riprova.',
+        });
+      }
+
+      const chatResult = await processLucillaChatTurn(verifiedUser, transcript);
+
+      let replyAudioBase64: string | null = null;
+      try {
+        const ttsResponse = await ai.models.generateContent({
+          model: 'gemini-3.8-flash-lite-tts',
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: chatResult.assistantMessage.content.slice(0, 900),
+                  speechMetadata: {
+                    style: 'Warm, empathetic, calm Italian personal coach',
+                  },
+                },
+              ],
+            },
+          ],
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: 'Kore' },
+              },
+            },
+          },
+        });
+        replyAudioBase64 =
+          ttsResponse.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data ?? null;
+      } catch (ttsErr) {
+        console.error('POST /api/voice-turn TTS error, using browser speech fallback:', ttsErr);
+      }
+
+      res.json({
+        transcript,
+        ...chatResult,
+        audioBase64: replyAudioBase64,
+        audioMimeType: replyAudioBase64 ? 'audio/wav' : null,
+      });
+    } catch (err) {
+      console.error('POST /api/voice-turn error:', err);
+      res.status(500).json({ error: 'Errore nella sessione vocale a turni con Lucilla.' });
     }
   });
 
