@@ -66,8 +66,16 @@ export async function migrateLocalDataToFirestore(
   let snap;
   try {
     snap = await getDocFromServer(userDocRef);
-  } catch {
-    snap = await getDoc(userDocRef);
+  } catch (serverErr) {
+    const code = (serverErr as { code?: string })?.code ?? '';
+    if (code === 'permission-denied') {
+      handleFirestoreError(serverErr, OperationType.GET, `users/${uid}`);
+    }
+    try {
+      snap = await getDoc(userDocRef);
+    } catch (cacheErr) {
+      handleFirestoreError(cacheErr, OperationType.GET, `users/${uid}`);
+    }
   }
 
   if (snap.exists()) {
@@ -93,7 +101,7 @@ export async function migrateLocalDataToFirestore(
   try {
     await setDoc(userDocRef, {
       ownerUid: uid,
-      email: email || ALLOWED_PERSONAL_EMAIL,
+      email: (email || ALLOWED_PERSONAL_EMAIL).trim().toLowerCase(),
       xp: clampNum(sourceState.xp, 225, 0, 1000000),
       activeChallengeId: clampRequiredStr(sourceState.activeChallengeId, 'w2', 32),
       weighInDayOfWeek: clampRequiredStr(sourceState.weighInDayOfWeek, 'Lunedì', 32),

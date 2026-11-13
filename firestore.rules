@@ -28,7 +28,8 @@ service cloud.firestore {
       return isSignedIn()
         && request.auth.uid == userId
         && request.auth.token.email_verified == true
-        && request.auth.token.email == 'diceless@gmail.com';
+        && request.auth.token.email is string
+        && request.auth.token.email.lower() == 'diceless@gmail.com';
     }
 
     function isBoundedStr(val, minLen, maxLen) {
@@ -59,7 +60,8 @@ service cloud.firestore {
         ])
         && data.ownerUid == userId
         && data.ownerUid == request.auth.uid
-        && data.email == 'diceless@gmail.com'
+        && data.email is string
+        && data.email.lower() == 'diceless@gmail.com'
         && isNumRange(data.xp, 0, 1000000)
         && isBoundedStr(data.activeChallengeId, 1, 32)
         && isBoundedStr(data.weighInDayOfWeek, 1, 32)
