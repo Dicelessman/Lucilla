@@ -280,7 +280,7 @@ export function PnlToolsView({
     if (perm === 'granted') {
       new Notification('Lucilla · Promemoria Attivi', {
         body: `Perfetto! Ricorda il Paracadute delle 17:30 e la pesata serena di ${weighInDayOfWeek}.`,
-        icon: '/pwa-192x192.png',
+        icon: `${import.meta.env.BASE_URL}pwa-192x192.png`,
       });
       localStorage.setItem('lucilla_browser_reminders', 'enabled');
       setReminderNotice('Notifiche del browser attivate su questo dispositivo.');
