@@ -341,7 +341,7 @@ function safeSendWs(ws: WebSocket, payload: Record<string, unknown>) {
   }
 }
 
-async function startServer() {
+export function createApiApp() {
   const app = express();
   app.use(express.json({ limit: '6mb' }));
 
@@ -997,6 +997,11 @@ Offri una breve risonanza di PNL Applicata (massimo 70 parole, 2-3 frasi):
     }
   });
 
+  return app;
+}
+
+async function startServer() {
+  const app = createApiApp();
   const httpServer = http.createServer(app);
 
   if (process.env.NODE_ENV !== 'production') {
@@ -1285,4 +1290,6 @@ Offri una breve risonanza di PNL Applicata (massimo 70 parole, 2-3 frasi):
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}

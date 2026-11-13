@@ -6,7 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(({ command }) => {
   const basePath =
-    command === 'serve' ? '/' : process.env.VITE_BASE_PATH || './';
+    command === 'serve'
+      ? '/'
+      : process.env.VITE_BASE_PATH || (process.env.VERCEL ? '/' : './');
 
   return {
     base: basePath,
