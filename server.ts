@@ -564,6 +564,15 @@ ${
         httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
       });
 
+      const cleanTranscript = (raw: string | undefined): string => {
+        const trimmed = (raw ?? '').trim();
+        if (!trimmed) return '';
+        if (/^[\[(]?(silenzio|silence|rumore|noise|nessun audio|inaudibile)[\])]?\.?$/i.test(trimmed)) {
+          return '';
+        }
+        return trimmed;
+      };
+
       const transcribePrompt =
         'Trascrivi fedelmente questo audio parlato in italiano. Restituisci solo la trascrizione testuale, senza commenti.';
       const audioPart = {
@@ -579,22 +588,34 @@ ${
           model: 'gemini-3.5-transcribe',
           contents: { parts: [audioPart, { text: transcribePrompt }] },
         });
-        transcript = (transcriptionRes.text ?? '').trim();
+        transcript = cleanTranscript(transcriptionRes.text);
       } catch (primaryTranscribeErr) {
-        console.warn(
-          'gemini-3.5-transcribe failed, falling back to gemini-4-hydrogen:',
-          primaryTranscribeErr
-        );
-        const fallbackRes = await ai.models.generateContent({
-          model: 'gemini-4-hydrogen',
-          contents: { parts: [audioPart, { text: transcribePrompt }] },
-        });
-        transcript = (fallbackRes.text ?? '').trim();
+        console.warn('gemini-3.5-transcribe failed:', primaryTranscribeErr);
+      }
+
+      if (!transcript) {
+        try {
+          const fallbackRes = await ai.models.generateContent({
+            model: 'gemini-4-hydrogen',
+            contents: {
+              parts: [
+                audioPart,
+                {
+                  text: 'Ascolta attentamente questo audio in italiano e trascrivi esattamente le parole pronunciate. Restituisci esclusivamente la frase trascritta.',
+                },
+              ],
+            },
+          });
+          transcript = cleanTranscript(fallbackRes.text);
+        } catch (fallbackTranscribeErr) {
+          console.warn('gemini-4-hydrogen transcription fallback failed:', fallbackTranscribeErr);
+        }
       }
 
       if (!transcript) {
         return res.status(422).json({
-          error: 'Non ho colto parole chiare: avvicinati al microfono e riprova.',
+          error:
+            'Non sono riuscita a distinguere le parole nell’audio: verifica che il microfono non sia mutato e riprova parlando 2-3 secondi.',
         });
       }
 

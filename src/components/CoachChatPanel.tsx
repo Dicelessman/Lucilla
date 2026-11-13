@@ -26,6 +26,7 @@ interface CoachChatPanelProps {
   isModelSpeaking: boolean;
   isRecordingTurn?: boolean;
   isProcessingTurn?: boolean;
+  micLevel?: number;
   liveUserTranscript: string;
   liveModelTranscript: string;
   liveError: string | null;
@@ -59,6 +60,7 @@ export function CoachChatPanel({
   isModelSpeaking,
   isRecordingTurn = false,
   isProcessingTurn = false,
+  micLevel = 0,
   liveUserTranscript,
   liveModelTranscript,
   liveError,
@@ -348,7 +350,40 @@ export function CoachChatPanel({
               </div>
 
               {liveStatus === 'active' && (
-                <div className="flex flex-wrap items-center gap-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  {voiceTransport === 'turn' && isRecordingTurn && (
+                    <div
+                      aria-label={`Livello microfono ${micLevel}%`}
+                      className="flex items-end gap-0.5 rounded-md border border-[#C6D5CE] bg-white px-2 py-1 dark:border-[#33423C] dark:bg-[#1B231F]"
+                    >
+                      {[12, 24, 38, 54, 72, 88].map((threshold, idx) => {
+                        const active = micLevel >= threshold;
+                        const heightClass =
+                          idx === 0
+                            ? 'h-1.5'
+                            : idx === 1
+                            ? 'h-2'
+                            : idx === 2
+                            ? 'h-2.5'
+                            : idx === 3
+                            ? 'h-3'
+                            : idx === 4
+                            ? 'h-3.5'
+                            : 'h-4';
+                        return (
+                          <span
+                            key={threshold}
+                            className={`w-1 rounded-sm transition-colors ${heightClass} ${
+                              active
+                                ? 'bg-[#1F6E5C] dark:bg-[#36A68C]'
+                                : 'bg-[#D5DFDA] dark:bg-[#2B3732]'
+                            }`}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+
                   {voiceTransport === 'turn' && isRecordingTurn && onSendVoiceTurn && (
                     <button
                       type="button"

@@ -884,6 +884,7 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
                   isModelSpeaking={liveVoice.isModelSpeaking}
                   isRecordingTurn={liveVoice.isRecordingTurn}
                   isProcessingTurn={liveVoice.isProcessingTurn}
+                  micLevel={liveVoice.micLevel}
                   liveUserTranscript={liveVoice.liveUserTranscript}
                   liveModelTranscript={liveVoice.liveModelTranscript}
                   liveError={liveVoice.errorMessage}

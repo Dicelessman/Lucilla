@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChatMessage, CoachState } from '../types/coach.ts';
-import { base64ToFloat32, float32ToInt16Base64 } from '../utils/audioPcm.ts';
+import {
+  base64ToFloat32,
+  encodeWavFromFloat32Chunks,
+  float32ToInt16Base64,
+} from '../utils/audioPcm.ts';
 
 export type LiveStatus = 'idle' | 'connecting' | 'active' | 'error';
 export type VoiceTransport = 'websocket' | 'turn';
@@ -18,35 +22,6 @@ interface UseLiveVoiceOptions {
   getIdToken: () => Promise<string | null>;
 }
 
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        resolve(reader.result);
-      } else {
-        reject(new Error('Impossibile convertire audio registrato.'));
-      }
-    };
-    reader.onerror = () => reject(new Error('Errore lettura audio registrato.'));
-    reader.readAsDataURL(blob);
-  });
-}
-
-function pickSupportedRecorderMime(): string | undefined {
-  if (typeof MediaRecorder === 'undefined') return undefined;
-  const candidates = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/mp4',
-    'audio/ogg;codecs=opus',
-  ];
-  for (const mime of candidates) {
-    if (MediaRecorder.isTypeSupported(mime)) return mime;
-  }
-  return undefined;
-}
-
 export function useLiveVoice({
   onStateUpdate,
   onTurnMessages,
@@ -58,6 +33,7 @@ export function useLiveVoice({
   const [isModelSpeaking, setIsModelSpeaking] = useState(false);
   const [isRecordingTurn, setIsRecordingTurn] = useState(false);
   const [isProcessingTurn, setIsProcessingTurn] = useState(false);
+  const [micLevel, setMicLevel] = useState(0);
   const [liveUserTranscript, setLiveUserTranscript] = useState('');
   const [liveModelTranscript, setLiveModelTranscript] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -69,9 +45,16 @@ export function useLiveVoice({
   const outputCtxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<BlobPart[]>([]);
-  const discardOnStopRef = useRef<boolean>(false);
+
+  // Turn-mode PCM capture refs
+  const turnCtxRef = useRef<AudioContext | null>(null);
+  const turnSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const turnProcessorRef = useRef<ScriptProcessorNode | null>(null);
+  const turnGainRef = useRef<GainNode | null>(null);
+  const turnChunksRef = useRef<Float32Array[]>([]);
+  const turnSampleRateRef = useRef<number>(48000);
+  const turnTotalSamplesRef = useRef<number>(0);
+
   const turnAudioRef = useRef<HTMLAudioElement | null>(null);
   const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const nextStartTimeRef = useRef<number>(0);
@@ -150,6 +133,39 @@ export function useLiveVoice({
     };
   }, []);
 
+  const teardownTurnCaptureGraph = useCallback(() => {
+    if (turnProcessorRef.current) {
+      try {
+        turnProcessorRef.current.disconnect();
+      } catch {
+        // ignore
+      }
+      turnProcessorRef.current = null;
+    }
+    if (turnSourceRef.current) {
+      try {
+        turnSourceRef.current.disconnect();
+      } catch {
+        // ignore
+      }
+      turnSourceRef.current = null;
+    }
+    if (turnGainRef.current) {
+      try {
+        turnGainRef.current.disconnect();
+      } catch {
+        // ignore
+      }
+      turnGainRef.current = null;
+    }
+    if (turnCtxRef.current) {
+      turnCtxRef.current.close().catch(() => {});
+      turnCtxRef.current = null;
+    }
+    setIsRecordingTurn(false);
+    setMicLevel(0);
+  }, []);
+
   const cleanupWsAndAudioGraph = useCallback(() => {
     if (processorRef.current) {
       try {
@@ -179,18 +195,9 @@ export function useLiveVoice({
 
   const stopCall = useCallback(() => {
     stopOutputPlayback();
-
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-      discardOnStopRef.current = true;
-      try {
-        recorderRef.current.stop();
-      } catch {
-        // ignore
-      }
-    }
-    recorderRef.current = null;
-    recordedChunksRef.current = [];
-    setIsRecordingTurn(false);
+    teardownTurnCaptureGraph();
+    turnChunksRef.current = [];
+    turnTotalSamplesRef.current = 0;
     setIsProcessingTurn(false);
 
     cleanupWsAndAudioGraph();
@@ -206,7 +213,7 @@ export function useLiveVoice({
     setIsMuted(false);
     setLiveUserTranscript('');
     setLiveModelTranscript('');
-  }, [cleanupWsAndAudioGraph, stopOutputPlayback]);
+  }, [cleanupWsAndAudioGraph, stopOutputPlayback, teardownTurnCaptureGraph]);
 
   const playTurnReplyAudio = useCallback(
     (audioBase64: string | null | undefined, audioMimeType: string | null | undefined, text: string) => {
@@ -253,10 +260,22 @@ export function useLiveVoice({
     [stopOutputPlayback]
   );
 
-  const submitAudioTurn = useCallback(
-    async (blob: Blob) => {
-      if (blob.size < 400) {
+  const submitWavTurn = useCallback(
+    async (chunks: Float32Array[], sampleRate: number) => {
+      if (chunks.length === 0) {
+        setErrorMessage('Nessun audio catturato dal microfono. Riprova.');
+        return;
+      }
+
+      const wav = encodeWavFromFloat32Chunks(chunks, sampleRate, 16000);
+      if (wav.durationSec < 0.35) {
         setErrorMessage('Registrazione troppo breve: parla per almeno 1 secondo.');
+        return;
+      }
+      if (wav.peak < 0.0012) {
+        setErrorMessage(
+          'Il microfono sembra in silenzio: controlla l’ingresso audio del dispositivo e riprova.'
+        );
         return;
       }
 
@@ -269,12 +288,6 @@ export function useLiveVoice({
           return;
         }
 
-        const dataUrl = await blobToBase64(blob);
-        const commaIdx = dataUrl.indexOf(',');
-        const cleanAudioBase64 =
-          dataUrl.startsWith('data:') && commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
-        const cleanMime = (blob.type || 'audio/webm').split(';')[0].trim() || 'audio/webm';
-
         const res = await fetch('/api/voice-turn', {
           method: 'POST',
           headers: {
@@ -282,8 +295,8 @@ export function useLiveVoice({
             Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
-            audioBase64: cleanAudioBase64,
-            mimeType: cleanMime,
+            audioBase64: wav.base64,
+            mimeType: 'audio/wav',
           }),
         });
 
@@ -348,46 +361,56 @@ export function useLiveVoice({
     [getIdToken, playTurnReplyAudio]
   );
 
-  const beginTurnRecording = useCallback(() => {
+  const beginTurnRecording = useCallback(async () => {
     const stream = streamRef.current;
     if (!stream) return;
-    if (recorderRef.current && recorderRef.current.state !== 'inactive') return;
+    if (turnProcessorRef.current) return;
 
     stopOutputPlayback();
     setErrorMessage(null);
-    recordedChunksRef.current = [];
-    discardOnStopRef.current = false;
+    turnChunksRef.current = [];
+    turnTotalSamplesRef.current = 0;
 
-    const mimeType = pickSupportedRecorderMime();
-    const options: MediaRecorderOptions = mimeType
-      ? { mimeType, audioBitsPerSecond: 32000 }
-      : { audioBitsPerSecond: 32000 };
-    const recorder = new MediaRecorder(stream, options);
-    recorderRef.current = recorder;
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+    turnCtxRef.current = ctx;
+    turnSampleRateRef.current = ctx.sampleRate || 48000;
 
-    recorder.ondataavailable = (ev) => {
-      if (ev.data && ev.data.size > 0) {
-        recordedChunksRef.current.push(ev.data);
+    const maxSamples = turnSampleRateRef.current * 45;
+    const source = ctx.createMediaStreamSource(stream);
+    const processor = ctx.createScriptProcessor(4096, 1, 1);
+    const silentGain = ctx.createGain();
+    silentGain.gain.value = 0;
+
+    turnSourceRef.current = source;
+    turnProcessorRef.current = processor;
+    turnGainRef.current = silentGain;
+
+    processor.onaudioprocess = (ev) => {
+      const input = ev.inputBuffer.getChannelData(0);
+      if (turnTotalSamplesRef.current < maxSamples) {
+        turnChunksRef.current.push(new Float32Array(input));
+        turnTotalSamplesRef.current += input.length;
       }
+      let sumSq = 0;
+      for (let i = 0; i < input.length; i += 4) {
+        sumSq += input[i] * input[i];
+      }
+      const rms = Math.sqrt(sumSq / Math.max(1, input.length / 4));
+      setMicLevel(Math.min(100, Math.round(rms * 420)));
     };
 
-    recorder.onstop = () => {
-      const shouldDiscard = discardOnStopRef.current;
-      discardOnStopRef.current = false;
-      const chunks = recordedChunksRef.current;
-      recordedChunksRef.current = [];
-      recorderRef.current = null;
-      setIsRecordingTurn(false);
-
-      if (shouldDiscard || chunks.length === 0) return;
-      const finalBlob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-      void submitAudioTurn(finalBlob);
-    };
-
-    recorder.start();
+    source.connect(processor);
+    processor.connect(silentGain);
+    silentGain.connect(ctx.destination);
     setIsRecordingTurn(true);
     setIsMuted(false);
-  }, [stopOutputPlayback, submitAudioTurn]);
+  }, [stopOutputPlayback]);
 
   const startTurnModeSession = useCallback(
     (noticeText?: string) => {
@@ -400,21 +423,24 @@ export function useLiveVoice({
         setLastVoiceNotice(noticeText);
         setTimeout(() => setLastVoiceNotice(null), 5000);
       }
-      beginTurnRecording();
+      void beginTurnRecording();
     },
     [beginTurnRecording, cleanupWsAndAudioGraph]
   );
 
   const sendVoiceTurn = useCallback(() => {
-    const rec = recorderRef.current;
-    if (!rec || rec.state === 'inactive') return;
-    discardOnStopRef.current = false;
-    rec.stop();
-  }, []);
+    if (!turnProcessorRef.current) return;
+    const chunks = turnChunksRef.current;
+    const sampleRate = turnSampleRateRef.current;
+    turnChunksRef.current = [];
+    turnTotalSamplesRef.current = 0;
+    teardownTurnCaptureGraph();
+    void submitWavTurn(chunks, sampleRate);
+  }, [submitWavTurn, teardownTurnCaptureGraph]);
 
   const startNextVoiceTurn = useCallback(() => {
     if (voiceTransportRef.current !== 'turn' || isProcessingTurn) return;
-    beginTurnRecording();
+    void beginTurnRecording();
   }, [beginTurnRecording, isProcessingTurn]);
 
   const startCall = useCallback(async () => {
@@ -570,17 +596,18 @@ export function useLiveVoice({
 
   const toggleMute = useCallback(() => {
     if (voiceTransportRef.current === 'turn') {
-      if (isRecordingTurn && recorderRef.current && recorderRef.current.state !== 'inactive') {
-        discardOnStopRef.current = true;
-        recorderRef.current.stop();
+      if (isRecordingTurn) {
+        turnChunksRef.current = [];
+        turnTotalSamplesRef.current = 0;
+        teardownTurnCaptureGraph();
         setIsMuted(true);
       } else if (!isProcessingTurn) {
-        beginTurnRecording();
+        void beginTurnRecording();
       }
       return;
     }
     setIsMuted((m) => !m);
-  }, [beginTurnRecording, isProcessingTurn, isRecordingTurn]);
+  }, [beginTurnRecording, isProcessingTurn, isRecordingTurn, teardownTurnCaptureGraph]);
 
   const sendLiveText = useCallback((text: string) => {
     const ws = wsRef.current;
@@ -602,6 +629,7 @@ export function useLiveVoice({
     isModelSpeaking,
     isRecordingTurn,
     isProcessingTurn,
+    micLevel,
     liveUserTranscript,
     liveModelTranscript,
     errorMessage,
