@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-serif: "Fraunces", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #F7F7F4;
+    color: #182420;
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  html.dark body {
+    background-color: #131917;
+    color: #EAECE6;
+  }
+
+  h1, h2, .font-editorial {
+    font-family: var(--font-serif);
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @keyframes breath-circle {
+    0%, 100% {
+      transform: scale(0.88);
+      opacity: 0.72;
+    }
+    40% {
+      transform: scale(1.1);
+      opacity: 1;
+    }
+  }
+
+  .animate-breath {
+    animation: breath-circle 10s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-breath {
+      animation: none;
+    }
+  }
+}
+
+@media print {
+  body {
+    background-color: #FFFFFF !important;
+    color: #111827 !important;
+  }
+
+  header,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-full {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .print-card {
+    border: 1px solid #D1D5DB !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}

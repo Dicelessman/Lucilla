@@ -1,0 +1,6 @@
+{
+  "name": "Lucilla — Coach Bariclip & PNL",
+  "description": "Coach quotidiano interattivo per abitudini emotive e alimentari post-Bariclip, basato sul protocollo clinico della Dott.ssa Elida Bardho e sul metodo PNL Giusto Peso Per Sempre.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

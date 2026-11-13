@@ -1,0 +1,415 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Helper Primitives
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isVerifiedPersonalUser(userId) {
+      return isSignedIn()
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'diceless@gmail.com';
+    }
+
+    function isBoundedStr(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isOptStr(data, field, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() <= maxLen);
+    }
+
+    function isNumRange(val, minV, maxV) {
+      return (val is int || val is float) && val >= minV && val <= maxV;
+    }
+
+    function userRootExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    // 3. Validation Blueprints
+    function isValidUserCoachProfile(data, userId) {
+      return data.keys().hasAll([
+          'ownerUid', 'email', 'xp', 'activeChallengeId',
+          'weighInDayOfWeek', 'profile', 'badges', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'email', 'xp', 'activeChallengeId',
+          'weighInDayOfWeek', 'profile', 'badges', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid == userId
+        && data.ownerUid == request.auth.uid
+        && data.email == 'diceless@gmail.com'
+        && isNumRange(data.xp, 0, 1000000)
+        && isBoundedStr(data.activeChallengeId, 1, 32)
+        && isBoundedStr(data.weighInDayOfWeek, 1, 32)
+        && data.profile is map
+        && data.profile.keys().hasOnly([
+          'name', 'heightCm', 'surgeryType', 'surgeryDate', 'surgeryWeightKg',
+          'surgeryBmi', 'lowestWeightKg', 'baselineWeightKg', 'baselineBmi',
+          'baselineDate', 'baselineMeasuresCm', 'positiveGoal',
+          'clinicianName', 'clinicianPhone', 'clinicianEmail'
+        ])
+        && isBoundedStr(data.profile.name, 1, 100)
+        && isBoundedStr(data.profile.positiveGoal, 1, 500)
+        && data.badges is list
+        && data.badges.size() <= 20
+        && (data.badges.size() == 0 || data.badges[0] is map);
+    }
+
+    function isValidMealEntry(data, userId, mealId) {
+      return data.keys().hasAll([
+          'ownerUid', 'id', 'date', 'time', 'slot', 'description',
+          'proteinCategory', 'hasVegetables', 'preHungerScale', 'postSatietyScale',
+          'perceivedEnergy', 'slowEatingUsed', 'slowMotionSecondsUsed',
+          'leftABite', 'symptomsReported', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'id', 'date', 'time', 'slot', 'description',
+          'proteinCategory', 'hasVegetables', 'preHungerScale', 'postSatietyScale',
+          'perceivedEnergy', 'slowEatingUsed', 'slowMotionSecondsUsed',
+          'leftABite', 'symptomsReported', 'notes', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid == userId
+        && data.ownerUid == request.auth.uid
+        && data.id == mealId
+        && isBoundedStr(data.date, 8, 16)
+        && isBoundedStr(data.time, 3, 16)
+        && data.slot in ['colazione', 'pranzo', 'spuntino_1730', 'cena']
+        && isBoundedStr(data.description, 1, 600)
+        && isBoundedStr(data.proteinCategory, 1, 40)
+        && data.hasVegetables is bool
+        && isNumRange(data.preHungerScale, 0, 10)
+        && isNumRange(data.postSatietyScale, 0, 10)
+        && isNumRange(data.perceivedEnergy, 1, 5)
+        && data.slowEatingUsed is bool
+        && data.slowMotionSecondsUsed is bool
+        && data.leftABite is bool
+        && data.symptomsReported is list
+        && data.symptomsReported.size() <= 10
+        && (data.symptomsReported.size() == 0 || data.symptomsReported[0] is string)
+        && isOptStr(data, 'notes', 600);
+    }
+
+    function isValidSosProvaEntry(data, userId, sosId) {
+      return data.keys().hasAll([
+          'ownerUid', 'id', 'date', 'time', 'situation', 'bodyZone',
+          'emotionName', 'intensityLevel', 'hungerType', 'realNeed',
+          'strategyUsed', 'waitedMinutes', 'outcome', 'xpEarned', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'id', 'date', 'time', 'situation', 'bodyZone',
+          'emotionName', 'intensityLevel', 'hungerType', 'realNeed',
+          'strategyUsed', 'waitedMinutes', 'outcome', 'xpEarned', 'notes', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid == userId
+        && data.ownerUid == request.auth.uid
+        && data.id == sosId
+        && isBoundedStr(data.date, 8, 16)
+        && isBoundedStr(data.time, 3, 16)
+        && isBoundedStr(data.situation, 1, 500)
+        && isBoundedStr(data.bodyZone, 1, 32)
+        && isBoundedStr(data.emotionName, 1, 200)
+        && isNumRange(data.intensityLevel, 1, 5)
+        && data.hungerType in ['fisica', 'emotiva', 'abitudine']
+        && isBoundedStr(data.realNeed, 1, 40)
+        && isBoundedStr(data.strategyUsed, 1, 400)
+        && isNumRange(data.waitedMinutes, 0, 240)
+        && data.outcome in ['onda_surfata', 'scelta_consapevole', 'mangiato_con_presenza', 'mangiato_di_corsa']
+        && isNumRange(data.xpEarned, 0, 500)
+        && isOptStr(data, 'notes', 600);
+    }
+
+    function isValidDailyCheckin(data, userId, checkinId) {
+      return data.keys().hasAll(['ownerUid', 'id', 'date', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'ownerUid', 'id', 'date', 'sleepHours', 'sleepQuality', 'dreamJournal',
+          'morningDomandeNotes', 'kinestheticAnchorDone', 'movementMinutes',
+          'afternoonParachuteDone', 'afternoonSnackChoice', 'eveningSuccess',
+          'eveningEmotionType', 'eveningRepairOrCompassion', 'eveningRitualDone',
+          'eveningRitualChoice', 'hydrationGlasses', 'hydrationAwayFromMealsDone',
+          'hydrationXpAwarded', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid == userId
+        && data.ownerUid == request.auth.uid
+        && data.id == checkinId
+        && isBoundedStr(data.date, 8, 16)
+        && (!('sleepHours' in data) || isNumRange(data.sleepHours, 0, 24))
+        && (!('sleepQuality' in data) || isNumRange(data.sleepQuality, 1, 5))
+        && isOptStr(data, 'dreamJournal', 2000)
+        && isOptStr(data, 'morningDomandeNotes', 1000)
+        && (!('kinestheticAnchorDone' in data) || data.kinestheticAnchorDone is bool)
+        && (!('movementMinutes' in data) || isNumRange(data.movementMinutes, 0, 600))
+        && (!('afternoonParachuteDone' in data) || data.afternoonParachuteDone is bool)
+        && isOptStr(data, 'afternoonSnackChoice', 250)
+        && isOptStr(data, 'eveningSuccess', 600)
+        && (!('eveningEmotionType' in data) || data.eveningEmotionType in ['nessuna', 'colpa', 'vergogna'])
+        && isOptStr(data, 'eveningRepairOrCompassion', 800)
+        && (!('eveningRitualDone' in data) || data.eveningRitualDone is bool)
+        && isOptStr(data, 'eveningRitualChoice', 250)
+        && (!('hydrationGlasses' in data) || isNumRange(data.hydrationGlasses, 0, 24))
+        && (!('hydrationAwayFromMealsDone' in data) || data.hydrationAwayFromMealsDone is bool)
+        && (!('hydrationXpAwarded' in data) || data.hydrationXpAwarded is bool);
+    }
+
+    function isValidWeightTapeEntry(data, userId, measId) {
+      return data.keys().hasAll(['ownerUid', 'id', 'date', 'weightKg', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'ownerUid', 'id', 'date', 'weightKg', 'umbilicalCm',
+          'hipsCm', 'chestCm', 'advisorNote', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid == userId
+        && data.ownerUid == request.auth.uid
+        && data.id == measId
+        && isBoundedStr(data.date, 8, 16)
+        && isNumRange(data.weightKg, 30, 350)
+        && (!('umbilicalCm' in data) || isNumRange(data.umbilicalCm, 40, 250))
+        && (!('hipsCm' in data) || isNumRange(data.hipsCm, 40, 250))
+        && (!('chestCm' in data) || isNumRange(data.chestCm, 40, 250))
+        && isOptStr(data, 'advisorNote', 500);
+    }
+
+    function isValidWheelAssessment(data, userId, wheelId) {
+      return data.keys().hasAll([
+          'ownerUid', 'id', 'date', 'areas', 'focusAreaId', 'firstMicroStep', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'id', 'date', 'areas', 'focusAreaId', 'firstMicroStep', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid == userId
+        && data.ownerUid == request.auth.uid
+        && data.id == wheelId
+        && isBoundedStr(data.date, 8, 16)
+        && data.areas is list
+        && data.areas.size() > 0
+        && data.areas.size() <= 12
+        && data.areas[0] is map
+        && isBoundedStr(data.focusAreaId, 1, 64)
+        && isBoundedStr(data.firstMicroStep, 1, 400);
+    }
+
+    function isValidChatMessage(data, userId, msgId) {
+      return data.keys().hasAll(['ownerUid', 'id', 'role', 'content', 'timestamp', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly([
+          'ownerUid', 'id', 'role', 'content', 'timestamp',
+          'commandTriggered', 'redFlagTriggered', 'slipUpReframed', 'actions',
+          'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid == userId
+        && data.ownerUid == request.auth.uid
+        && data.id == msgId
+        && data.role in ['user', 'assistant']
+        && isBoundedStr(data.content, 1, 4000)
+        && isBoundedStr(data.timestamp, 1, 16)
+        && isOptStr(data, 'commandTriggered', 32)
+        && (!('redFlagTriggered' in data) || data.redFlagTriggered is bool)
+        && (!('slipUpReframed' in data) || data.slipUpReframed is bool)
+        && (!('actions' in data) || (data.actions is list && data.actions.size() <= 6 && (data.actions.size() == 0 || data.actions[0] is map)));
+    }
+
+    function isValidClinicalVisitEntry(data, userId, visitId) {
+      return data.keys().hasAll([
+          'ownerUid', 'id', 'date', 'clinicianName', 'summaryNotes', 'nextFocus', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'id', 'date', 'clinicianName', 'weightAtVisitKg',
+          'summaryNotes', 'nextFocus', 'nextVisitDate', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid == userId
+        && data.ownerUid == request.auth.uid
+        && data.id == visitId
+        && isBoundedStr(data.date, 8, 16)
+        && isBoundedStr(data.clinicianName, 1, 120)
+        && (!('weightAtVisitKg' in data) || isNumRange(data.weightAtVisitKg, 30, 350))
+        && isBoundedStr(data.summaryNotes, 1, 1200)
+        && isBoundedStr(data.nextFocus, 1, 600)
+        && isOptStr(data, 'nextVisitDate', 16);
+    }
+
+    // 4. Collection Rules
+    match /users/{userId} {
+      allow get: if isValidId(userId) && isVerifiedPersonalUser(userId);
+      allow create: if isValidId(userId)
+        && isVerifiedPersonalUser(userId)
+        && isValidUserCoachProfile(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(userId)
+        && isVerifiedPersonalUser(userId)
+        && isValidUserCoachProfile(incoming(), userId)
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'xp', 'activeChallengeId', 'weighInDayOfWeek', 'badges', 'profile', 'updatedAt'
+        ]);
+
+      match /meals/{mealId} {
+        allow get: if isValidId(userId) && isValidId(mealId) && isVerifiedPersonalUser(userId);
+        allow list: if isValidId(userId) && isVerifiedPersonalUser(userId) && resource.data.ownerUid == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(mealId)
+          && isVerifiedPersonalUser(userId)
+          && isValidMealEntry(incoming(), userId, mealId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userRootExists(userId);
+        allow update: if isValidId(userId) && isValidId(mealId)
+          && isVerifiedPersonalUser(userId)
+          && isValidMealEntry(incoming(), userId, mealId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'date', 'time', 'slot', 'description', 'proteinCategory', 'hasVegetables',
+            'preHungerScale', 'postSatietyScale', 'perceivedEnergy', 'slowEatingUsed',
+            'slowMotionSecondsUsed', 'leftABite', 'symptomsReported', 'notes', 'updatedAt'
+          ]);
+        allow delete: if isValidId(userId) && isValidId(mealId) && isVerifiedPersonalUser(userId);
+      }
+
+      match /sosLogs/{sosId} {
+        allow get: if isValidId(userId) && isValidId(sosId) && isVerifiedPersonalUser(userId);
+        allow list: if isValidId(userId) && isVerifiedPersonalUser(userId) && resource.data.ownerUid == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(sosId)
+          && isVerifiedPersonalUser(userId)
+          && isValidSosProvaEntry(incoming(), userId, sosId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userRootExists(userId);
+        allow update: if isValidId(userId) && isValidId(sosId)
+          && isVerifiedPersonalUser(userId)
+          && isValidSosProvaEntry(incoming(), userId, sosId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'date', 'time', 'situation', 'bodyZone', 'emotionName', 'intensityLevel',
+            'hungerType', 'realNeed', 'strategyUsed', 'waitedMinutes', 'outcome',
+            'xpEarned', 'notes', 'updatedAt'
+          ]);
+        allow delete: if isValidId(userId) && isValidId(sosId) && isVerifiedPersonalUser(userId);
+      }
+
+      match /checkins/{checkinId} {
+        allow get: if isValidId(userId) && isValidId(checkinId) && isVerifiedPersonalUser(userId);
+        allow list: if isValidId(userId) && isVerifiedPersonalUser(userId) && resource.data.ownerUid == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(checkinId)
+          && isVerifiedPersonalUser(userId)
+          && isValidDailyCheckin(incoming(), userId, checkinId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userRootExists(userId);
+        allow update: if isValidId(userId) && isValidId(checkinId)
+          && isVerifiedPersonalUser(userId)
+          && isValidDailyCheckin(incoming(), userId, checkinId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'sleepHours', 'sleepQuality', 'dreamJournal', 'morningDomandeNotes',
+            'kinestheticAnchorDone', 'movementMinutes', 'afternoonParachuteDone',
+            'afternoonSnackChoice', 'eveningSuccess', 'eveningEmotionType',
+            'eveningRepairOrCompassion', 'eveningRitualDone', 'eveningRitualChoice',
+            'hydrationGlasses', 'hydrationAwayFromMealsDone', 'hydrationXpAwarded',
+            'updatedAt'
+          ]);
+        allow delete: if isValidId(userId) && isValidId(checkinId) && isVerifiedPersonalUser(userId);
+      }
+
+      match /measurements/{measId} {
+        allow get: if isValidId(userId) && isValidId(measId) && isVerifiedPersonalUser(userId);
+        allow list: if isValidId(userId) && isVerifiedPersonalUser(userId) && resource.data.ownerUid == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(measId)
+          && isVerifiedPersonalUser(userId)
+          && isValidWeightTapeEntry(incoming(), userId, measId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userRootExists(userId);
+        allow update: if isValidId(userId) && isValidId(measId)
+          && isVerifiedPersonalUser(userId)
+          && isValidWeightTapeEntry(incoming(), userId, measId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'date', 'weightKg', 'umbilicalCm', 'hipsCm', 'chestCm', 'advisorNote', 'updatedAt'
+          ]);
+        allow delete: if isValidId(userId) && isValidId(measId) && isVerifiedPersonalUser(userId);
+      }
+
+      match /wheelAssessments/{wheelId} {
+        allow get: if isValidId(userId) && isValidId(wheelId) && isVerifiedPersonalUser(userId);
+        allow list: if isValidId(userId) && isVerifiedPersonalUser(userId) && resource.data.ownerUid == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(wheelId)
+          && isVerifiedPersonalUser(userId)
+          && isValidWheelAssessment(incoming(), userId, wheelId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userRootExists(userId);
+        allow update: if isValidId(userId) && isValidId(wheelId)
+          && isVerifiedPersonalUser(userId)
+          && isValidWheelAssessment(incoming(), userId, wheelId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly(['areas', 'focusAreaId', 'firstMicroStep', 'updatedAt']);
+        allow delete: if isValidId(userId) && isValidId(wheelId) && isVerifiedPersonalUser(userId);
+      }
+
+      match /chatMessages/{msgId} {
+        allow get: if isValidId(userId) && isValidId(msgId) && isVerifiedPersonalUser(userId);
+        allow list: if isValidId(userId) && isVerifiedPersonalUser(userId) && resource.data.ownerUid == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(msgId)
+          && isVerifiedPersonalUser(userId)
+          && isValidChatMessage(incoming(), userId, msgId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userRootExists(userId);
+        allow update: if false;
+        allow delete: if isValidId(userId) && isValidId(msgId) && isVerifiedPersonalUser(userId);
+      }
+
+      match /clinicalVisits/{visitId} {
+        allow get: if isValidId(userId) && isValidId(visitId) && isVerifiedPersonalUser(userId);
+        allow list: if isValidId(userId) && isVerifiedPersonalUser(userId) && resource.data.ownerUid == request.auth.uid;
+        allow create: if isValidId(userId) && isValidId(visitId)
+          && isVerifiedPersonalUser(userId)
+          && isValidClinicalVisitEntry(incoming(), userId, visitId)
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time
+          && userRootExists(userId);
+        allow update: if isValidId(userId) && isValidId(visitId)
+          && isVerifiedPersonalUser(userId)
+          && isValidClinicalVisitEntry(incoming(), userId, visitId)
+          && incoming().ownerUid == existing().ownerUid
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasOnly([
+            'date', 'clinicianName', 'weightAtVisitKg', 'summaryNotes', 'nextFocus', 'nextVisitDate', 'updatedAt'
+          ]);
+        allow delete: if isValidId(userId) && isValidId(visitId) && isVerifiedPersonalUser(userId);
+      }
+    }
+  }
+}

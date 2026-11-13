@@ -1,0 +1,206 @@
+{
+  "entities": {
+    "UserCoachProfile": {
+      "title": "UserCoachProfile",
+      "description": "Profilo clinico Bariclip di Davide Rossi, XP, sfida attiva e badge Stanze del Valore.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 160 },
+        "xp": { "type": "number" },
+        "activeChallengeId": { "type": "string", "maxLength": 32 },
+        "weighInDayOfWeek": { "type": "string", "maxLength": 32 },
+        "profile": { "type": "object" },
+        "badges": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "email", "xp", "activeChallengeId", "weighInDayOfWeek", "profile", "badges", "createdAt", "updatedAt"]
+    },
+    "MealEntry": {
+      "title": "MealEntry",
+      "description": "Pasto registrato nel Diario Alimentare Consapevole con scala sazietà e controlli Bariclip.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "time": { "type": "string", "maxLength": 16 },
+        "slot": { "type": "string", "enum": ["colazione", "pranzo", "spuntino_1730", "cena"] },
+        "description": { "type": "string", "maxLength": 600 },
+        "proteinCategory": { "type": "string", "maxLength": 40 },
+        "hasVegetables": { "type": "boolean" },
+        "preHungerScale": { "type": "number" },
+        "postSatietyScale": { "type": "number" },
+        "perceivedEnergy": { "type": "number" },
+        "slowEatingUsed": { "type": "boolean" },
+        "slowMotionSecondsUsed": { "type": "boolean" },
+        "leftABite": { "type": "boolean" },
+        "symptomsReported": { "type": "array" },
+        "notes": { "type": "string", "maxLength": 600 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "id", "date", "time", "slot", "description", "proteinCategory", "hasVegetables", "preHungerScale", "postSatietyScale", "perceivedEnergy", "slowEatingUsed", "slowMotionSecondsUsed", "leftABite", "symptomsReported", "createdAt", "updatedAt"]
+    },
+    "SosProvaEntry": {
+      "title": "SosProvaEntry",
+      "description": "Episodio registrato nel Registro delle Prove del protocollo SOS Surfare l'Onda.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "time": { "type": "string", "maxLength": 16 },
+        "situation": { "type": "string", "maxLength": 500 },
+        "bodyZone": { "type": "string", "maxLength": 32 },
+        "emotionName": { "type": "string", "maxLength": 200 },
+        "intensityLevel": { "type": "number" },
+        "hungerType": { "type": "string", "enum": ["fisica", "emotiva", "abitudine"] },
+        "realNeed": { "type": "string", "maxLength": 40 },
+        "strategyUsed": { "type": "string", "maxLength": 400 },
+        "waitedMinutes": { "type": "number" },
+        "outcome": { "type": "string", "enum": ["onda_surfata", "scelta_consapevole", "mangiato_con_presenza", "mangiato_di_corsa"] },
+        "xpEarned": { "type": "number" },
+        "notes": { "type": "string", "maxLength": 600 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "id", "date", "time", "situation", "bodyZone", "emotionName", "intensityLevel", "hungerType", "realNeed", "strategyUsed", "waitedMinutes", "outcome", "xpEarned", "createdAt", "updatedAt"]
+    },
+    "DailyCheckin": {
+      "title": "DailyCheckin",
+      "description": "Check-in quotidiano (sonno, Diario dei Sogni, Domande Utili, paracadute 17:30, chiusura serale).",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "sleepHours": { "type": "number" },
+        "sleepQuality": { "type": "number" },
+        "dreamJournal": { "type": "string", "maxLength": 2000 },
+        "morningDomandeNotes": { "type": "string", "maxLength": 1000 },
+        "kinestheticAnchorDone": { "type": "boolean" },
+        "movementMinutes": { "type": "number" },
+        "afternoonParachuteDone": { "type": "boolean" },
+        "afternoonSnackChoice": { "type": "string", "maxLength": 250 },
+        "eveningSuccess": { "type": "string", "maxLength": 600 },
+        "eveningEmotionType": { "type": "string", "enum": ["nessuna", "colpa", "vergogna"] },
+        "eveningRepairOrCompassion": { "type": "string", "maxLength": 800 },
+        "eveningRitualDone": { "type": "boolean" },
+        "eveningRitualChoice": { "type": "string", "maxLength": 250 },
+        "hydrationGlasses": { "type": "number" },
+        "hydrationAwayFromMealsDone": { "type": "boolean" },
+        "hydrationXpAwarded": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "id", "date", "createdAt", "updatedAt"]
+    },
+    "WeightTapeEntry": {
+      "title": "WeightTapeEntry",
+      "description": "Pesata settimanale e misure del metro da sarta.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "weightKg": { "type": "number" },
+        "umbilicalCm": { "type": "number" },
+        "hipsCm": { "type": "number" },
+        "chestCm": { "type": "number" },
+        "advisorNote": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "id", "date", "weightKg", "createdAt", "updatedAt"]
+    },
+    "WheelAssessment": {
+      "title": "WheelAssessment",
+      "description": "Valutazione mensile della Ruota della Vita a 9 aree (Stato Attuale vs Desiderato).",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "areas": { "type": "array" },
+        "focusAreaId": { "type": "string", "maxLength": 64 },
+        "firstMicroStep": { "type": "string", "maxLength": 400 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "id", "date", "areas", "focusAreaId", "firstMicroStep", "createdAt", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Messaggio nella cronologia testuale e trascrizione vocale con Lucilla.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string", "maxLength": 4000 },
+        "timestamp": { "type": "string", "maxLength": 16 },
+        "commandTriggered": { "type": "string", "maxLength": 32 },
+        "redFlagTriggered": { "type": "boolean" },
+        "slipUpReframed": { "type": "boolean" },
+        "actions": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "id", "role", "content", "timestamp", "createdAt", "updatedAt"]
+    },
+    "ClinicalVisitEntry": {
+      "title": "ClinicalVisitEntry",
+      "description": "Nota e diario delle visite cliniche con la Dott.ssa Elida Bardho.",
+      "type": "object",
+      "properties": {
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "id": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 16 },
+        "clinicianName": { "type": "string", "maxLength": 120 },
+        "weightAtVisitKg": { "type": "number" },
+        "summaryNotes": { "type": "string", "maxLength": 1200 },
+        "nextFocus": { "type": "string", "maxLength": 600 },
+        "nextVisitDate": { "type": "string", "maxLength": 16 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUid", "id", "date", "clinicianName", "summaryNotes", "nextFocus", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserCoachProfile" },
+      "description": "Documento radice privato del profilo utente di Davide Rossi"
+    },
+    "/users/{userId}/meals/{mealId}": {
+      "schema": { "$ref": "#/entities/MealEntry" },
+      "description": "Pasti registrati nel diario alimentare"
+    },
+    "/users/{userId}/sosLogs/{sosId}": {
+      "schema": { "$ref": "#/entities/SosProvaEntry" },
+      "description": "Registro delle Prove /sos"
+    },
+    "/users/{userId}/checkins/{checkinId}": {
+      "schema": { "$ref": "#/entities/DailyCheckin" },
+      "description": "Routine quotidiane, sonno, idratazione e Diario dei Sogni"
+    },
+    "/users/{userId}/measurements/{measId}": {
+      "schema": { "$ref": "#/entities/WeightTapeEntry" },
+      "description": "Pesate settimanali e misure antropometriche"
+    },
+    "/users/{userId}/wheelAssessments/{wheelId}": {
+      "schema": { "$ref": "#/entities/WheelAssessment" },
+      "description": "Valutazioni mensili della Ruota della Vita"
+    },
+    "/users/{userId}/clinicalVisits/{visitId}": {
+      "schema": { "$ref": "#/entities/ClinicalVisitEntry" },
+      "description": "Diario delle visite cliniche con la Dott.ssa Bardho"
+    },
+    "/users/{userId}/chatMessages/{msgId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Cronologia conversazioni e trascrizioni vocali Live"
+    }
+  }
+}

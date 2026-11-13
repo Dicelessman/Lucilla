@@ -1,0 +1,420 @@
+{
+  "profile": {
+    "name": "Davide Rossi",
+    "heightCm": 184,
+    "surgeryType": "Bariclip",
+    "surgeryDate": "2022-03-09",
+    "surgeryWeightKg": 141,
+    "surgeryBmi": 41.6,
+    "lowestWeightKg": 104,
+    "baselineWeightKg": 126,
+    "baselineBmi": 37.2,
+    "baselineDate": "2026-10-24",
+    "baselineMeasuresCm": {
+      "umbilical": 134,
+      "hips": 124,
+      "chest": 129
+    },
+    "positiveGoal": "Voglio pesare 109 kg (sotto i 110 kg), sentirmi leggero, energico e padrone delle mie scelte, vivendo come una persona Magra Naturalmente in progress.",
+    "clinicianName": "Dott.ssa Elida Bardho",
+    "clinicianPhone": "335/6898371",
+    "clinicianEmail": "elibardho@gmail.com"
+  },
+  "xp": 225,
+  "activeChallengeId": "w2",
+  "weighInDayOfWeek": "Lunedì",
+  "meals": [
+    {
+      "id": "m1",
+      "date": "2026-11-07",
+      "time": "08:15",
+      "slot": "colazione",
+      "description": "Yogurt greco 0% 125g con semi di chia e 100g frutti di bosco",
+      "proteinCategory": "nessuno",
+      "hasVegetables": false,
+      "preHungerScale": 8,
+      "postSatietyScale": 6,
+      "perceivedEnergy": 4,
+      "slowEatingUsed": true,
+      "slowMotionSecondsUsed": true,
+      "leftABite": false,
+      "symptomsReported": []
+    },
+    {
+      "id": "m2",
+      "date": "2026-11-07",
+      "time": "13:05",
+      "slot": "pranzo",
+      "description": "Petto di pollo alla piastra 180g con zucchine grigliate e 1 cucchiaio olio EVO",
+      "proteinCategory": "carne_bianca",
+      "hasVegetables": true,
+      "preHungerScale": 8,
+      "postSatietyScale": 5,
+      "perceivedEnergy": 4,
+      "slowEatingUsed": true,
+      "slowMotionSecondsUsed": true,
+      "leftABite": false,
+      "symptomsReported": []
+    },
+    {
+      "id": "m3",
+      "date": "2026-11-08",
+      "time": "17:30",
+      "slot": "spuntino_1730",
+      "description": "30g parmigiano reggiano + infuso di matè caldo",
+      "proteinCategory": "nessuno",
+      "hasVegetables": false,
+      "preHungerScale": 7,
+      "postSatietyScale": 6,
+      "perceivedEnergy": 4,
+      "slowEatingUsed": true,
+      "slowMotionSecondsUsed": false,
+      "leftABite": false,
+      "symptomsReported": []
+    },
+    {
+      "id": "m4",
+      "date": "2026-11-09",
+      "time": "20:10",
+      "slot": "cena",
+      "description": "Filetto di orata al forno 220g con finocchi e olio EVO",
+      "proteinCategory": "pesce",
+      "hasVegetables": true,
+      "preHungerScale": 8,
+      "postSatietyScale": 5,
+      "perceivedEnergy": 5,
+      "slowEatingUsed": true,
+      "slowMotionSecondsUsed": true,
+      "leftABite": true,
+      "symptomsReported": []
+    },
+    {
+      "id": "m5",
+      "date": "2026-11-10",
+      "time": "13:15",
+      "slot": "pranzo",
+      "description": "Pasta integrale 80g con 60g tonno al naturale, pomodorini e 1 cucchiaio olio EVO",
+      "proteinCategory": "primo",
+      "hasVegetables": true,
+      "preHungerScale": 9,
+      "postSatietyScale": 5,
+      "perceivedEnergy": 4,
+      "slowEatingUsed": true,
+      "slowMotionSecondsUsed": true,
+      "leftABite": false,
+      "symptomsReported": []
+    },
+    {
+      "id": "m6",
+      "date": "2026-11-11",
+      "time": "20:00",
+      "slot": "cena",
+      "description": "Tagliata di manzo magra 120g con rucola, radicchio e 1 cucchiaio olio EVO",
+      "proteinCategory": "carne_rossa",
+      "hasVegetables": true,
+      "preHungerScale": 8,
+      "postSatietyScale": 6,
+      "perceivedEnergy": 4,
+      "slowEatingUsed": true,
+      "slowMotionSecondsUsed": true,
+      "leftABite": false,
+      "symptomsReported": []
+    },
+    {
+      "id": "m7",
+      "date": "2026-11-12",
+      "time": "13:00",
+      "slot": "pranzo",
+      "description": "Zuppa di lenticchie 200g con bietole e 1 cucchiaio olio EVO",
+      "proteinCategory": "legumi",
+      "hasVegetables": true,
+      "preHungerScale": 8,
+      "postSatietyScale": 5,
+      "perceivedEnergy": 4,
+      "slowEatingUsed": true,
+      "slowMotionSecondsUsed": false,
+      "leftABite": false,
+      "symptomsReported": []
+    },
+    {
+      "id": "m8",
+      "date": "2026-11-12",
+      "time": "20:15",
+      "slot": "cena",
+      "description": "Merluzzo al vapore 220g con broccoli e 1 cucchiaio olio EVO",
+      "proteinCategory": "pesce",
+      "hasVegetables": true,
+      "preHungerScale": 8,
+      "postSatietyScale": 6,
+      "perceivedEnergy": 4,
+      "slowEatingUsed": true,
+      "slowMotionSecondsUsed": true,
+      "leftABite": true,
+      "symptomsReported": []
+    }
+  ],
+  "sosLogs": [
+    {
+      "id": "s1",
+      "date": "2026-11-07",
+      "time": "18:35",
+      "situation": "Rientro dal lavoro dopo interruzioni continue, voglia di aprire la dispensa",
+      "bodyZone": "stomaco",
+      "emotionName": "Frustrazione e stanchezza mentale",
+      "intensityLevel": 3,
+      "hungerType": "emotiva",
+      "realNeed": "riposo",
+      "strategyUsed": "Attività manuale alternativa + matè caldo (evitato timer ansioso)",
+      "waitedMinutes": 10,
+      "outcome": "onda_surfata",
+      "xpEarned": 65,
+      "notes": "Il matè caldo e mettere in ordine i materiali scout ha spento l’onda in 8 minuti."
+    },
+    {
+      "id": "s2",
+      "date": "2026-11-09",
+      "time": "21:15",
+      "situation": "Riunione capi scout tesa, desiderio di dolce veloce",
+      "bodyZone": "mascella",
+      "emotionName": "Tensione e bisogno di riconoscimento",
+      "intensityLevel": 3,
+      "hungerType": "emotiva",
+      "realNeed": "premio",
+      "strategyUsed": "3 respiri lenti + frase ponte + gioco Radio Borbottona a 33 giri",
+      "waitedMinutes": 7,
+      "outcome": "scelta_consapevole",
+      "xpEarned": 55
+    },
+    {
+      "id": "s3",
+      "date": "2026-11-11",
+      "time": "19:05",
+      "situation": "Fame serale improvvisa davanti al frigo",
+      "bodyZone": "petto",
+      "emotionName": "Noia e agitazione",
+      "intensityLevel": 2,
+      "hungerType": "abitudine",
+      "realNeed": "distrazione",
+      "strategyUsed": "Bicchiere d’acqua + immagine cibo sbiadita in B/N + camminata in casa",
+      "waitedMinutes": 6,
+      "outcome": "onda_surfata",
+      "xpEarned": 45
+    }
+  ],
+  "checkins": [
+    {
+      "id": "c1",
+      "date": "2026-11-08",
+      "sleepHours": 5.5,
+      "sleepQuality": 2,
+      "dreamJournal": "Sognavo di preparare lo zaino per una route in montagna ma cercavo di renderlo più leggero togliendo pesi inutili.",
+      "morningDomandeNotes": "Oggi mi regalo calma alle 17:30 prima della sera.",
+      "kinestheticAnchorDone": true,
+      "movementMinutes": 30,
+      "afternoonParachuteDone": true,
+      "afternoonSnackChoice": "30g grana + matè caldo",
+      "eveningSuccess": "Ho protetto la fascia 18–20 grazie allo spuntino delle 17:30.",
+      "eveningEmotionType": "nessuna",
+      "eveningRitualDone": true,
+      "eveningRitualChoice": "Tisana calda non zuccherata e luci soffuse"
+    },
+    {
+      "id": "c2",
+      "date": "2026-11-10",
+      "sleepHours": 7,
+      "sleepQuality": 4,
+      "dreamJournal": "Camminavo lungo un sentiero chiaro al mattino presto con passo fluido e respiro ampio.",
+      "morningDomandeNotes": "Voglio godermi il pranzo appoggiando la forchetta tra un boccone e l’altro.",
+      "kinestheticAnchorDone": true,
+      "movementMinutes": 45,
+      "afternoonParachuteDone": true,
+      "afternoonSnackChoice": "40g bresaola",
+      "eveningSuccess": "Mi sono fermato a sazietà 5–6 lasciando un piccolo boccone nel piatto.",
+      "eveningEmotionType": "colpa",
+      "eveningRepairOrCompassion": "Ho mangiato un biscotto extra alle 16, ma l’ho trasformato in informazione e a cena ho ripreso il piano regolare.",
+      "eveningRitualDone": true,
+      "eveningRitualChoice": "Brodo caldo e telefono spento alle 22:00"
+    },
+    {
+      "id": "c3",
+      "date": "2026-11-12",
+      "sleepHours": 6.5,
+      "sleepQuality": 4,
+      "dreamJournal": "Ero in una cucina ordinata e luminosa, preparavo una tisana con calma.",
+      "morningDomandeNotes": "Scelgo presenza e leggerezza.",
+      "kinestheticAnchorDone": true,
+      "movementMinutes": 35,
+      "afternoonParachuteDone": true,
+      "afternoonSnackChoice": "1 Wasa + 60g ricotta",
+      "eveningSuccess": "Cena lenta con pesce e verdure, zero tensione.",
+      "eveningEmotionType": "nessuna",
+      "eveningRitualDone": true,
+      "eveningRitualChoice": "Tisana finocchietto"
+    }
+  ],
+  "measurements": [
+    {
+      "id": "w_base",
+      "date": "2026-10-24",
+      "weightKg": 126,
+      "umbilicalCm": 134,
+      "hipsCm": 124,
+      "chestCm": 129,
+      "advisorNote": "Baseline visita Dott.ssa Bardho — punto di partenza lucido."
+    },
+    {
+      "id": "w_1",
+      "date": "2026-10-30",
+      "weightKg": 125.2,
+      "umbilicalCm": 133,
+      "hipsCm": 123.5,
+      "chestCm": 128.5,
+      "advisorNote": "Prima settimana di costanza e spuntino delle 17:30."
+    },
+    {
+      "id": "w_2",
+      "date": "2026-11-06",
+      "weightKg": 124.5,
+      "umbilicalCm": 132,
+      "hipsCm": 123,
+      "chestCm": 128,
+      "advisorNote": "La bilancia segnala direzione serena (-1.5 kg dal baseline)."
+    },
+    {
+      "id": "w_3",
+      "date": "2026-11-13",
+      "weightKg": 123.8,
+      "umbilicalCm": 131,
+      "hipsCm": 122.5,
+      "chestCm": 127.5,
+      "advisorNote": "Più energia nelle camminate e meno tensione alle 18:00."
+    }
+  ],
+  "wheelAssessments": [
+    {
+      "id": "wheel_init",
+      "date": "2026-11-06",
+      "areas": [
+        {
+          "areaId": "lavoro",
+          "label": "Lavoro",
+          "sa": 6,
+          "sd": 8
+        },
+        {
+          "areaId": "famiglia_attuale",
+          "label": "Famiglia attuale",
+          "sa": 7,
+          "sd": 9
+        },
+        {
+          "areaId": "famiglia_origine",
+          "label": "Famiglia d’origine",
+          "sa": 6,
+          "sd": 7
+        },
+        {
+          "areaId": "coppia",
+          "label": "Coppia",
+          "sa": 7,
+          "sd": 9
+        },
+        {
+          "areaId": "salute_fisica",
+          "label": "Salute fisica",
+          "sa": 5,
+          "sd": 9
+        },
+        {
+          "areaId": "salute_mentale",
+          "label": "Salute mentale",
+          "sa": 6,
+          "sd": 9
+        },
+        {
+          "areaId": "tempo_libero",
+          "label": "Tempo libero / svago",
+          "sa": 5,
+          "sd": 8
+        },
+        {
+          "areaId": "crescita",
+          "label": "Crescita personale",
+          "sa": 7,
+          "sd": 9
+        },
+        {
+          "areaId": "amici",
+          "label": "Amici e relazioni",
+          "sa": 7,
+          "sd": 8
+        }
+      ],
+      "focusAreaId": "salute_fisica",
+      "firstMicroStep": "Proteggere 30 minuti di camminata piacevole 3 volte a settimana e il rituale serale."
+    }
+  ],
+  "badges": [
+    {
+      "id": "stanza_coraggio",
+      "stanza": "Stanza del Coraggio",
+      "title": "Trasparenza senza Vergogna",
+      "description": "Hai registrato uno scivolone o una giornata complessa trasformandola in informazione utile.",
+      "unlockedAt": "2026-10-28"
+    },
+    {
+      "id": "stanza_presenza",
+      "stanza": "Stanza della Presenza",
+      "title": "Maestro dello Slow Eating",
+      "description": "Hai praticato 5 pasti con forchetta appoggiata e pausa di Slow Motion.",
+      "unlockedAt": "2026-11-01"
+    },
+    {
+      "id": "stanza_relazioni",
+      "stanza": "Stanza delle Relazioni",
+      "title": "Condivisione Aperta",
+      "description": "Hai scelto il contatto umano o il supporto invece di restare solo con l’onda emotiva."
+    },
+    {
+      "id": "stanza_cura",
+      "stanza": "Stanza della Cura",
+      "title": "Custode del Sonno e del Paracadute",
+      "description": "Hai protetto la fascia 18:00–20:00 con lo spuntino delle 17:30 dopo una notte corta.",
+      "unlockedAt": "2026-10-30"
+    },
+    {
+      "id": "stanza_creativita",
+      "stanza": "Stanza della Creatività",
+      "title": "Sognatore Lucido",
+      "description": "Hai annotato 3 sogni o immagini PNL nel tuo Diario dei Sogni."
+    },
+    {
+      "id": "stanza_natura",
+      "stanza": "Stanza dell’Energia",
+      "title": "150 Minuti di Vitalità",
+      "description": "Hai completato 150 minuti di movimento piacevole nella settimana."
+    }
+  ],
+  "chatHistory": [
+    {
+      "id": "msg_welcome",
+      "role": "assistant",
+      "timestamp": "08:30",
+      "content": "Buongiorno Davide! Sono Lucilla. Fino a ieri potevi sentire il peso di vecchie abitudini automatiche, oggi invece stai già costruendo un ritmo nuovo da persona Magra Naturalmente in progress. Come ti senti nel corpo in questo momento e quale piccola scelta piacevole vuoi regalarti oggi?",
+      "actions": [
+        {
+          "type": "open_morning",
+          "label": "Check-in Mattina & Sogni"
+        },
+        {
+          "type": "open_sos",
+          "label": "Surfa un’onda (/sos)"
+        },
+        {
+          "type": "open_diary",
+          "label": "Registra Pasto Slow"
+        }
+      ]
+    }
+  ]
+}
