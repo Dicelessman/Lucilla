@@ -270,6 +270,11 @@ export function useLiveVoice({
         }
 
         const dataUrl = await blobToBase64(blob);
+        const commaIdx = dataUrl.indexOf(',');
+        const cleanAudioBase64 =
+          dataUrl.startsWith('data:') && commaIdx !== -1 ? dataUrl.slice(commaIdx + 1) : dataUrl;
+        const cleanMime = (blob.type || 'audio/webm').split(';')[0].trim() || 'audio/webm';
+
         const res = await fetch('/api/voice-turn', {
           method: 'POST',
           headers: {
@@ -277,12 +282,13 @@ export function useLiveVoice({
             Authorization: `Bearer ${idToken}`,
           },
           body: JSON.stringify({
-            audioBase64: dataUrl,
-            mimeType: blob.type || 'audio/webm',
+            audioBase64: cleanAudioBase64,
+            mimeType: cleanMime,
           }),
         });
 
-        const payload = (await res.json()) as {
+        const rawText = await res.text();
+        let payload: {
           error?: string;
           transcript?: string;
           userMessage?: ChatMessage;
@@ -291,10 +297,17 @@ export function useLiveVoice({
           audioMimeType?: string | null;
           command?: string | null;
           sosTriggered?: boolean;
-        };
+        } = {};
+        try {
+          payload = JSON.parse(rawText);
+        } catch {
+          payload = {};
+        }
 
         if (!res.ok) {
-          setErrorMessage(payload.error || 'Non sono riuscita a elaborare il turno vocale.');
+          setErrorMessage(
+            payload.error || `Errore vocale (${res.status}). Riprova tra un istante.`
+          );
           return;
         }
 

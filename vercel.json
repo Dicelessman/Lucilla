@@ -2,6 +2,12 @@
   "$schema": "https://openapi.vercel-schemas.com/vercel.json",
   "buildCommand": "npx vite build",
   "outputDirectory": "dist",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "firebase-applet-config.json",
+      "maxDuration": 30
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

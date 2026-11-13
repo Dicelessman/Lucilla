@@ -546,33 +546,52 @@ ${
         });
       }
 
-      const cleanBase64 = audioBase64.replace(/^data:audio\/[a-zA-Z0-9.+_-]+;base64,/, '');
+      const commaIdx = audioBase64.indexOf(',');
+      const cleanBase64 = (
+        audioBase64.startsWith('data:') && commaIdx !== -1
+          ? audioBase64.slice(commaIdx + 1)
+          : audioBase64
+      ).trim();
       const baseMime = (mimeType || 'audio/webm').split(';')[0].trim();
       const safeMime = baseMime.startsWith('audio/') ? baseMime : 'audio/webm';
+
+      if (!cleanBase64) {
+        return res.status(400).json({ error: 'Audio vocale vuoto.' });
+      }
 
       const ai = new GoogleGenAI({
         apiKey,
         httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
       });
 
-      const transcriptionRes = await ai.models.generateContent({
-        model: 'gemini-3.5-transcribe',
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                mimeType: safeMime,
-                data: cleanBase64,
-              },
-            },
-            {
-              text: 'Trascrivi fedelmente questo audio parlato in italiano. Restituisci solo la trascrizione testuale, senza commenti.',
-            },
-          ],
+      const transcribePrompt =
+        'Trascrivi fedelmente questo audio parlato in italiano. Restituisci solo la trascrizione testuale, senza commenti.';
+      const audioPart = {
+        inlineData: {
+          mimeType: safeMime,
+          data: cleanBase64,
         },
-      });
+      };
 
-      const transcript = (transcriptionRes.text ?? '').trim();
+      let transcript = '';
+      try {
+        const transcriptionRes = await ai.models.generateContent({
+          model: 'gemini-3.5-transcribe',
+          contents: { parts: [audioPart, { text: transcribePrompt }] },
+        });
+        transcript = (transcriptionRes.text ?? '').trim();
+      } catch (primaryTranscribeErr) {
+        console.warn(
+          'gemini-3.5-transcribe failed, falling back to gemini-4-hydrogen:',
+          primaryTranscribeErr
+        );
+        const fallbackRes = await ai.models.generateContent({
+          model: 'gemini-4-hydrogen',
+          contents: { parts: [audioPart, { text: transcribePrompt }] },
+        });
+        transcript = (fallbackRes.text ?? '').trim();
+      }
+
       if (!transcript) {
         return res.status(422).json({
           error: 'Non ho colto parole chiare: avvicinati al microfono e riprova.',
@@ -620,8 +639,13 @@ ${
         audioMimeType: replyAudioBase64 ? 'audio/wav' : null,
       });
     } catch (err) {
-      console.error('POST /api/voice-turn error:', err);
-      res.status(500).json({ error: 'Errore nella sessione vocale a turni con Lucilla.' });
+      const detail = err instanceof Error ? err.message : String(err);
+      console.error('POST /api/voice-turn error:', detail);
+      res.status(500).json({
+        error: detail.includes('API_KEY')
+          ? 'Chiave GEMINI_API_KEY non valida o mancante su Vercel.'
+          : 'Errore nella sessione vocale con Lucilla. Riprova tra un istante.',
+      });
     }
   });
 
