@@ -30,6 +30,12 @@ export type LearningStageId =
   | 'competenza_conscia'
   | 'competenza_inconscia';
 
+export interface CustomMusicTrack {
+  id: string;
+  title: string;
+  url: string;
+}
+
 export interface UserProfile {
   name: string;
   heightCm: number;
@@ -50,6 +56,7 @@ export interface UserProfile {
   clinicianName: string;
   clinicianPhone: string;
   clinicianEmail: string;
+  customMusicTracks?: CustomMusicTrack[];
 }
 
 export interface MealEntry {

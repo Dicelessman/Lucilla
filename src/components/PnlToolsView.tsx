@@ -262,7 +262,7 @@ export function PnlToolsView({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `lucilla_routine_bariclip.ics`;
+    a.download = `lucilla_routine_settimanali.ics`;
     a.click();
     URL.revokeObjectURL(url);
     setReminderNotice(
@@ -539,7 +539,7 @@ export function PnlToolsView({
                 }`}
               >
                 {ambientMusicPlaying ? <Pause className="h-3.5 w-3.5" /> : <Music className="h-3.5 w-3.5" />}
-                <span>{ambientMusicPlaying ? 'Pausa sottofondo' : 'Musica di sottofondo'}</span>
+                <span>{ambientMusicPlaying ? 'Pausa musica' : 'Rilassati con la musica'}</span>
               </button>
             )}
           </div>

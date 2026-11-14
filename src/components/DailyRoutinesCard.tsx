@@ -260,7 +260,7 @@ export function DailyRoutinesCard({
             <Droplets className="h-4 w-4 shrink-0 text-[#1F6E5C] dark:text-[#36A68C]" />
             <div>
               <p className="text-xs font-medium text-[#182420] dark:text-[#EAECE6]">
-                Acqua Bariclip lontano dai pasti:{' '}
+                Acqua lontano dai pasti:{' '}
                 <span className="font-mono font-semibold tabular-nums text-[#1F6E5C] dark:text-[#36A68C]">
                   {hydrationGlasses}/8 bicchieri
                 </span>

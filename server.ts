@@ -89,12 +89,12 @@ function buildLucillaSystemInstruction(state: CoachState, today: string, isVoice
 Fondi il Protocollo Clinico-Psicologico e Nutrizionale della Dott.ssa Elida Bardho con il Metodo "Giusto Peso Per Sempre" e la PNL Applicata di Debora Conti.
 
 PROFILO DI DAVIDE ROSSI:
-- Altezza: 184 cm. Intervento Bariclip (09/03/2022). Peso intervento: 141 kg (BMI 41.6), peso minimo: 104 kg, baseline piano: 126 kg (BMI 37.2).
+- Altezza: 184 cm. Percorso clinico dal 09/03/2022. Peso iniziale: 141 kg (BMI 41.6), peso minimo: 104 kg, baseline piano: 126 kg (BMI 37.2).
 - Obiettivo formulato in positivo: "${state.profile.positiveGoal}"
 - Clinico di riferimento: ${state.profile.clinicianName} (${state.profile.clinicianPhone} — ${state.profile.clinicianEmail}).
 - Stadio attuale apprendimento PNL: ${stage.title} (${state.xp} XP).
 - Sfida settimanale attiva: ${challenge.title} — ${challenge.description}
-- Frequenze proteiche Bariclip questa settimana: ${countsText}
+- Frequenze proteiche settimanali del piano: ${countsText}
 - Check-in di oggi (${today}): ${
     todayCheckin
       ? `Sonno ${todayCheckin.sleepHours ?? 'non registrato'}h; Paracadute 17:30 ${
@@ -125,7 +125,7 @@ const LIVE_VOICE_TOOLS: FunctionDeclaration[] = [
   {
     name: 'log_meal',
     description:
-      'Registra un pasto nel Diario Alimentare di Davide verificando le regole Bariclip (ripetizioni giornaliere, alimenti da evitare, red flag fisiche, sazietà 10->0).',
+      'Registra un pasto nel Diario Alimentare di Davide verificando le regole del piano (ripetizioni giornaliere, alimenti da moderare, segnali fisici, sazietà 10->0).',
     behavior: Behavior.NON_BLOCKING,
     parameters: {
       type: Type.OBJECT,
@@ -179,7 +179,7 @@ const LIVE_VOICE_TOOLS: FunctionDeclaration[] = [
   {
     name: 'log_hydration',
     description:
-      'Registra i bicchieri di acqua bevuti oggi lontano dai pasti secondo il protocollo Bariclip.',
+      'Registra i bicchieri di acqua bevuti oggi lontano dai pasti secondo il protocollo.',
     behavior: Behavior.NON_BLOCKING,
     parameters: {
       type: Type.OBJECT,
@@ -318,7 +318,7 @@ function buildFallbackReply(
   if (redFlags.length > 0) {
     return `Grazie per avermi segnalato subito questo segnale del corpo (${redFlags.join(
       ', '
-    )}). Con il Bariclip il corpo ti sta chiedendo più spazio e lentezza: nei prossimi pasti puoi ridurre le porzioni, masticare molto lentamente appoggiando la forchetta tra un boccone e l'altro e contattare la Dott.ssa Elida Bardho al 335/6898371 (elibardho@gmail.com) per confrontarvi insieme. Come ti senti in questo momento?`;
+    )}). Il corpo ti sta chiedendo più spazio e lentezza: nei prossimi pasti puoi ridurre le porzioni, masticare molto lentamente appoggiando la forchetta tra un boccone e l'altro e contattare la Dott.ssa Elida Bardho al 335/6898371 (elibardho@gmail.com) per confrontarvi insieme. Come ti senti in questo momento?`;
   }
   if (command === '/sos' || sosTriggered) {
     return `Eccoci insieme Davide, fermiamoci un respiro. Fino a ieri quell'impulso ti guidava in automatico, oggi stai già scegliendo di osservarlo. Dove senti questa sensazione nel corpo in questo momento — nello stomaco, nel petto, nella mascella o nelle mani? E che nome ha quell'emozione lì da 1 a 5?`;
@@ -332,7 +332,7 @@ function buildFallbackReply(
   if (slipUp) {
     return `Fermiamoci un istante con gentilezza: quello che fino a ieri vedevi come un passo falso, oggi è una scivolata utile ricca di informazioni. Un episodio solo resta un episodio, e il tuo percorso prosegue sereno già dal prossimo pasto regolare. Cosa vuoi regalarti adesso di semplice e confortevole per chiudere con calma questo momento?`;
   }
-  return `Ti ascolto con piacere, Davide. Oggi stai allenando il tuo ritmo da persona Magra Naturalmente in progress: cosa puoi scegliere di semplice e piacevole nelle prossime ore per sentirti leggero e padrone della tua giornata?`;
+  return `Ti ascolto con piacere, Davide. Oggi stai allenando il tuo ritmo da persona magra: cosa puoi scegliere di semplice e piacevole nelle prossime ore per sentirti leggero e padrone della tua giornata?`;
 }
 
 function safeSendWs(ws: WebSocket, payload: Record<string, unknown>) {
@@ -421,7 +421,7 @@ export function createApiApp() {
 ${command ? `\nComando rapido attivato: ${command}` : ''}
 ${
   redFlags.length > 0
-    ? `\nATTENZIONE CLINICA BARICLIP RILEVATA: ${redFlags.join(', ')}. Applica immediatamente il protocollo red flag.`
+    ? `\nATTENZIONE CLINICA RILEVATA: ${redFlags.join(', ')}. Applica immediatamente il protocollo red flag.`
     : ''
 }
 ${
@@ -731,8 +731,8 @@ ${
               },
             },
             {
-              text: `Analizza questa foto del piatto per il Diario Alimentare Bariclip (Protocollo Dott.ssa Bardho).
-Descrivi in italiano gli alimenti visibili con stima pratica della porzione, classifica la fonte proteica principale in una delle categorie consentite (carne_bianca, carne_rossa, pesce, tonno_salmone, uova, formaggio, legumi, tofu_seitan, affettato, primo, pasto_libero, nessuno), indica se sono presenti verdure, segnala eventuali elementi da moderare secondo il piano (es. fritti, salse pesanti, dolci, alcol, gassate) senza tono giudicante, e aggiungi un breve consiglio Bariclip positivo e pratico sulle porzioni o sulla masticazione lenta (es. appoggiare la forchetta tra un boccone e l'altro). Zero negazioni dure, tono caldo ed empatico.`,
+              text: `Analizza questa foto del piatto per il Diario Alimentare (Protocollo Dott.ssa Bardho).
+Descrivi in italiano gli alimenti visibili con stima pratica della porzione, classifica la fonte proteica principale in una delle categorie consentite (carne_bianca, carne_rossa, pesce, tonno_salmone, uova, formaggio, legumi, tofu_seitan, affettato, primo, pasto_libero, nessuno), indica se sono presenti verdure, segnala eventuali elementi da moderare secondo il piano (es. fritti, salse pesanti, dolci, alcol, gassate) senza tono giudicante, e aggiungi un breve consiglio pratico sulle porzioni o sulla masticazione lenta (es. appoggiare la forchetta tra un boccone e l'altro). Zero negazioni dure, tono caldo ed empatico.`,
             },
           ],
         },
@@ -761,7 +761,7 @@ Descrivi in italiano gli alimenti visibili con stima pratica della porzione, cla
               bariclipPortionNote: {
                 type: Type.STRING,
                 description:
-                  'Consiglio breve post-Bariclip su bocconi piccoli e Slow Eating.',
+                  'Consiglio breve su bocconi piccoli e Slow Eating.',
               },
             },
             required: [
@@ -946,7 +946,7 @@ Descrivi in italiano gli alimenti visibili con stima pratica della porzione, cla
                 .join('; ')
             : 'tutte le frequenze settimanali raggiunte, proponi pesce o carne bianca leggera';
 
-        const prompt = `Genera esattamente 3 idee di ricette lampo (massimo 10-12 minuti di preparazione) compatibili con chirurgia Bariclip per Davide Rossi.
+        const prompt = `Genera esattamente 3 idee di ricette lampo (massimo 10-12 minuti di preparazione) compatibili con il piano nutrizionale per Davide Rossi.
 - Frequenze proteiche rimanenti questa settimana: ${remainingList}.
 - Fonti protette già usate oggi a pranzo/cena (da variare per il secondo pasto di oggi): ${todayUsedProtected.join(', ') || 'nessuna'}.
 - Oggi è domenica? ${isSunday(today) ? 'Sì (il primo piatto non va proposto di domenica)' : 'No'}.
@@ -997,7 +997,7 @@ ${pantryNote?.trim() ? `- Ingredienti già in frigo/dispensa segnalati da Davide
         const normalized: QuickMealIdea[] = (parsed?.ideas ?? [])
           .slice(0, 3)
           .map((idea) => ({
-            title: String(idea.title || 'Piatto espresso Bariclip').slice(0, 120),
+            title: String(idea.title || 'Piatto espresso bilanciato').slice(0, 120),
             proteinCategory: VALID_PROTEIN_CATEGORIES.includes(idea.proteinCategory)
               ? idea.proteinCategory
               : 'pesce',
@@ -1182,8 +1182,8 @@ async function startServer() {
       server: {
         middlewareMode: true,
         allowedHosts: true,
-        hmr: hmrDisabled ? false : { server: httpServer, path: '/vite-hmr' },
-        ws: { server: httpServer, path: '/vite-hmr' },
+        hmr: !hmrDisabled,
+        ws: hmrDisabled ? false : { server: httpServer, path: '/vite-hmr' },
       },
       appType: 'spa',
     });

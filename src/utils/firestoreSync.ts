@@ -36,10 +36,12 @@ import { createInitialSeedState, DEFAULT_BADGES } from './seedData.ts';
 import {
   clampNum,
   clampRequiredStr,
+  normalizeLegacyGoalText,
   sanitizeBadges,
   sanitizeChatPayload,
   sanitizeCheckinPayload,
   sanitizeClinicalVisitPayload,
+  sanitizeCustomMusicTracks,
   sanitizeMeasurementPayload,
   sanitizeMealPayload,
   sanitizeProfile,
@@ -234,8 +236,14 @@ export function subscribeToCoachState(
     (snap) => {
       if (!snap.exists()) return;
       const d = snap.data();
+      const rawProfile = (d.profile as UserProfile) ?? seed.profile;
+      const normalizedProfile: UserProfile = {
+        ...rawProfile,
+        positiveGoal: normalizeLegacyGoalText(rawProfile.positiveGoal || seed.profile.positiveGoal),
+        customMusicTracks: sanitizeCustomMusicTracks(rawProfile.customMusicTracks),
+      };
       currentRoot = {
-        profile: (d.profile as UserProfile) ?? seed.profile,
+        profile: normalizedProfile,
         xp: typeof d.xp === 'number' ? d.xp : seed.xp,
         activeChallengeId:
           typeof d.activeChallengeId === 'string' ? d.activeChallengeId : seed.activeChallengeId,

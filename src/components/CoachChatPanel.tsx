@@ -269,18 +269,16 @@ export function CoachChatPanel({
 
   return (
     <section
+      id="coach-chat-panel"
       aria-label="Conversazione con Lucilla"
-      className="flex h-full min-h-[540px] flex-col rounded-xl border border-[#E4E6E0] bg-white dark:border-[#2B3732] dark:bg-[#1B231F]"
+      className="flex h-full min-h-[380px] flex-col rounded-xl border border-[#E4E6E0] bg-white dark:border-[#2B3732] dark:bg-[#1B231F]"
     >
       {/* Panel Header */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E4E6E0] px-5 py-3.5 dark:border-[#2B3732]">
         <div>
           <h2 className="font-editorial text-lg font-medium text-[#182420] dark:text-[#EAECE6]">
-            Dialogo con Lucilla
+            Parla con Lucilla
           </h2>
-          <p className="text-xs text-[#5C6762] dark:text-[#A3B0AA]">
-            Protocollo Bardho · PNL Giusto Peso · Voce Live &amp; Testo
-          </p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -547,8 +545,7 @@ export function CoachChatPanel({
       {/* Messages Feed */}
       <div
         ref={scrollRef}
-        className="flex-1 space-y-4 overflow-y-auto px-5 py-4"
-        style={{ maxHeight: '520px' }}
+        className="max-h-[300px] flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:max-h-[340px]"
       >
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
@@ -577,7 +574,7 @@ export function CoachChatPanel({
                 {msg.redFlagTriggered && (
                   <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-[#B91C1C] dark:text-[#FCA5A5]">
                     <AlertTriangle className="h-4 w-4" />
-                    <span>Attenzione Clinica Bariclip</span>
+                    <span>Attenzione Clinica</span>
                   </div>
                 )}
                 <p className="whitespace-pre-line">{msg.content}</p>

@@ -7,13 +7,14 @@ import {
   MessageCircleHeart,
   Mic,
   PhoneOff,
+  Send,
   SlidersHorizontal,
   Moon,
   Sun,
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton.tsx';
 import { SignOutButton } from './AuthGate.tsx';
-import { LiveStatus } from '../hooks/useLiveVoice.ts';
+import { LiveStatus, VoiceTransport } from '../hooks/useLiveVoice.ts';
 
 export type ActiveTab = 'oggi' | 'diario' | 'pnl' | 'report';
 
@@ -26,7 +27,13 @@ interface TopNavProps {
   onToggleTheme: () => void;
   xp: number;
   liveStatus: LiveStatus;
+  voiceTransport?: VoiceTransport;
+  isRecordingTurn?: boolean;
+  isProcessingTurn?: boolean;
   onToggleLiveCall: () => void;
+  onSendVoiceTurn?: () => void;
+  onStartNextVoiceTurn?: () => void;
+  onStopLiveCall?: () => void;
   onSignOut: () => void;
 }
 
@@ -35,7 +42,7 @@ const NAV_ITEMS: Array<{
   label: string;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
-  { id: 'oggi', label: 'Oggi & Coach', icon: MessageCircleHeart },
+  { id: 'oggi', label: 'Oggi', icon: MessageCircleHeart },
   { id: 'diario', label: 'Diario & Piano', icon: BookOpen },
   { id: 'pnl', label: 'Strumenti PNL', icon: Compass },
   { id: 'report', label: 'Progressi & Report', icon: BarChart3 },
@@ -50,10 +57,45 @@ export function TopNav({
   onToggleTheme,
   xp,
   liveStatus,
+  voiceTransport = 'websocket',
+  isRecordingTurn = false,
+  isProcessingTurn = false,
   onToggleLiveCall,
+  onSendVoiceTurn,
+  onStartNextVoiceTurn,
+  onStopLiveCall,
   onSignOut,
 }: TopNavProps) {
   const isLive = liveStatus === 'active' || liveStatus === 'connecting';
+  const isTurnSendMode =
+    liveStatus === 'active' && voiceTransport === 'turn' && isRecordingTurn;
+  const isTurnProcessing =
+    liveStatus === 'active' && voiceTransport === 'turn' && isProcessingTurn;
+  const isTurnReadyForNext =
+    liveStatus === 'active' &&
+    voiceTransport === 'turn' &&
+    !isRecordingTurn &&
+    !isProcessingTurn;
+
+  function handlePrimaryVoiceClick() {
+    if (liveStatus === 'idle' || liveStatus === 'error') {
+      onToggleLiveCall();
+      return;
+    }
+    if (liveStatus === 'connecting') {
+      onStopLiveCall?.();
+      return;
+    }
+    if (voiceTransport === 'turn') {
+      if (isRecordingTurn) {
+        onSendVoiceTurn?.();
+      } else if (!isProcessingTurn) {
+        onStartNextVoiceTurn?.();
+      }
+      return;
+    }
+    onStopLiveCall?.();
+  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#E4E6E0] bg-white/95 backdrop-blur-sm dark:border-[#2B3732] dark:bg-[#1B231F]/95">
@@ -97,7 +139,7 @@ export function TopNav({
           })}
         </nav>
 
-        {/* Right: Utilities + Live Audio Call + Primary SOS CTA + Sign Out */}
+        {/* Right: Utilities + Live Audio Call / Send + Primary SOS CTA + Sign Out */}
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <div className="hidden sm:block">
             <PWAInstallButton />
@@ -125,22 +167,61 @@ export function TopNav({
 
           <button
             type="button"
-            onClick={onToggleLiveCall}
-            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 py-2 text-xs font-medium transition-colors sm:px-3 sm:text-sm ${
-              isLive
+            disabled={isTurnProcessing}
+            onClick={handlePrimaryVoiceClick}
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 py-2 text-xs font-medium transition-colors disabled:opacity-60 sm:px-3 sm:text-sm ${
+              isTurnSendMode
+                ? 'border-[#1F6E5C] bg-[#1F6E5C] font-semibold text-white hover:bg-[#185849]'
+                : isTurnReadyForNext
+                ? 'border-[#1F6E5C] bg-[#EDF3F0] font-semibold text-[#182420] hover:bg-[#DFECE6] dark:border-[#36A68C] dark:bg-[#1F332C] dark:text-[#EAECE6]'
+                : isLive
                 ? 'border-[#B91C1C] bg-[#FEF2F2] text-[#991B1B] hover:bg-[#FEE2E2] dark:border-[#7F1D1D] dark:bg-[#2A1717] dark:text-[#FCA5A5]'
                 : 'border-[#1F6E5C] bg-white text-[#1F6E5C] hover:bg-[#EDF3F0] dark:border-[#36A68C] dark:bg-[#1B231F] dark:text-[#36A68C] dark:hover:bg-[#1F332C]'
             }`}
           >
-            {isLive ? <PhoneOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            <span className="hidden sm:inline">
-              {liveStatus === 'connecting'
-                ? 'Connessione...'
-                : liveStatus === 'active'
-                ? 'Chiudi Live'
-                : 'Parla Live'}
-            </span>
+            {isTurnSendMode ? (
+              <>
+                <Send className="h-4 w-4" />
+                <span className="sm:hidden">Invia</span>
+                <span className="hidden sm:inline">Invia a Lucilla</span>
+              </>
+            ) : isTurnProcessing ? (
+              <>
+                <Mic className="h-4 w-4" />
+                <span>Invio...</span>
+              </>
+            ) : isTurnReadyForNext ? (
+              <>
+                <Mic className="h-4 w-4 text-[#1F6E5C] dark:text-[#36A68C]" />
+                <span className="sm:hidden">Parla</span>
+                <span className="hidden sm:inline">Parla ancora</span>
+              </>
+            ) : isLive ? (
+              <>
+                <PhoneOff className="h-4 w-4" />
+                <span className="hidden sm:inline">
+                  {liveStatus === 'connecting' ? 'Connessione...' : 'Chiudi Live'}
+                </span>
+              </>
+            ) : (
+              <>
+                <Mic className="h-4 w-4" />
+                <span className="hidden sm:inline">Parla Live</span>
+              </>
+            )}
           </button>
+
+          {liveStatus === 'active' && voiceTransport === 'turn' && onStopLiveCall && (
+            <button
+              type="button"
+              onClick={onStopLiveCall}
+              aria-label="Chiudi chat vocale"
+              title="Chiudi chat vocale"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] text-[#991B1B] transition-colors hover:bg-[#FEE2E2] dark:border-[#7F1D1D] dark:bg-[#2A1717] dark:text-[#FCA5A5]"
+            >
+              <PhoneOff className="h-4 w-4" />
+            </button>
+          )}
 
           <button
             type="button"

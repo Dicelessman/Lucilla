@@ -112,7 +112,7 @@ export function createInitialSeedState(): CoachState {
     profile: {
       name: 'Davide Rossi',
       heightCm: 184,
-      surgeryType: 'Bariclip',
+      surgeryType: 'Percorso Clinico',
       surgeryDate: '2022-03-09',
       surgeryWeightKg: 141,
       surgeryBmi: 41.6,
@@ -126,7 +126,7 @@ export function createInitialSeedState(): CoachState {
         chest: 129,
       },
       positiveGoal:
-        'Voglio pesare 109 kg (sotto i 110 kg), sentirmi leggero, energico e padrone delle mie scelte, vivendo come una persona Magra Naturalmente in progress.',
+        'Voglio pesare 109 kg (sotto i 110 kg), sentirmi leggero, energico e padrone delle mie scelte, vivendo come una persona magra.',
       clinicianName: 'Dott.ssa Elida Bardho',
       clinicianPhone: '335/6898371',
       clinicianEmail: 'elibardho@gmail.com',
@@ -436,7 +436,7 @@ export function createInitialSeedState(): CoachState {
         clinicianName: 'Dott.ssa Elida Bardho',
         weightAtVisitKg: 126.0,
         summaryNotes:
-          'Visita iniziale di riallineamento post-Bariclip: impostazione frequenze proteiche settimanali, spuntino paracadute alle 17:30 e idratazione lontano dai pasti.',
+          'Visita iniziale di riallineamento nutrizionale: impostazione frequenze proteiche settimanali, spuntino paracadute alle 17:30 e idratazione lontano dai pasti.',
         nextFocus:
           'Consolidare Slow Eating 30 secondi prima dei pasti principali, proteggere fascia 18:00–20:00 e portare il Diario delle Prove al prossimo controllo.',
       },
@@ -448,7 +448,7 @@ export function createInitialSeedState(): CoachState {
         role: 'assistant',
         timestamp: '08:30',
         content:
-          'Buongiorno Davide! Sono Lucilla. Fino a ieri potevi sentire il peso di vecchie abitudini automatiche, oggi invece stai già costruendo un ritmo nuovo da persona Magra Naturalmente in progress. Come ti senti nel corpo in questo momento e quale piccola scelta piacevole vuoi regalarti oggi?',
+          'Buongiorno Davide! Sono Lucilla. Fino a ieri potevi sentire il peso di vecchie abitudini automatiche, oggi invece stai già costruendo un ritmo nuovo da persona magra. Come ti senti nel corpo in questo momento e quale piccola scelta piacevole vuoi regalarti oggi?',
         actions: [
           { type: 'open_morning', label: 'Check-in Mattina & Sogni' },
           { type: 'open_sos', label: 'Surfa un’onda (/sos)' },

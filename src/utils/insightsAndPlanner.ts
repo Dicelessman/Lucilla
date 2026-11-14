@@ -385,7 +385,7 @@ export function generateWeeklyBriefing(state: CoachState): WeeklyBriefingResult 
       metric: `${rate}% in zona ideale 5–6 · ${slowRate}% Slow Eating`,
       narrative:
         rate >= 60
-          ? 'Stai ascoltando con finezza i segnali post-Bariclip fermandoti leggero intorno al 5–6.'
+          ? 'Stai ascoltando con finezza i segnali di sazietà fermandoti leggero intorno al 5–6.'
           : 'Puoi sperimentare una micro-pausa a metà piatto posando la forchetta per avvicinarti ancora di più al target 5–6.',
       tone: rate >= 60 ? 'positive' : 'neutral',
     });
@@ -471,12 +471,12 @@ export function generateWeeklyRoutinesIcs(options: {
   const lines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Lucilla Coach//Bariclip & PNL Routine//IT',
+    'PRODID:-//Lucilla Coach//PNL & Routine//IT',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     // 1. Spuntino Paracadute 17:30
     'BEGIN:VEVENT',
-    `UID:lucilla-parachute-1730@bariclip.local`,
+    `UID:lucilla-parachute-1730@lucilla.local`,
     `DTSTAMP:${dtStamp}`,
     `DTSTART:${formatIcsDateCompact(options.referenceDateStr, 17, 30)}`,
     `DTEND:${formatIcsDateCompact(options.referenceDateStr, 17, 45)}`,
@@ -493,7 +493,7 @@ export function generateWeeklyRoutinesIcs(options: {
     'END:VEVENT',
     // 2. Chiusura Serale & Diario Sogni 21:30
     'BEGIN:VEVENT',
-    `UID:lucilla-evening-closure@bariclip.local`,
+    `UID:lucilla-evening-closure@lucilla.local`,
     `DTSTAMP:${dtStamp}`,
     `DTSTART:${formatIcsDateCompact(options.referenceDateStr, 21, 30)}`,
     `DTEND:${formatIcsDateCompact(options.referenceDateStr, 21, 45)}`,
@@ -505,7 +505,7 @@ export function generateWeeklyRoutinesIcs(options: {
     'END:VEVENT',
     // 3. Pesata Settimanale & Metro da Sarta
     'BEGIN:VEVENT',
-    `UID:lucilla-weekly-weighin@bariclip.local`,
+    `UID:lucilla-weekly-weighin@lucilla.local`,
     `DTSTAMP:${dtStamp}`,
     `DTSTART:${formatIcsDateCompact(options.referenceDateStr, 7, 30)}`,
     `DTEND:${formatIcsDateCompact(options.referenceDateStr, 7, 45)}`,
@@ -520,7 +520,7 @@ export function generateWeeklyRoutinesIcs(options: {
   if (options.nextVisitDate && /^\d{4}-\d{2}-\d{2}$/.test(options.nextVisitDate)) {
     lines.push(
       'BEGIN:VEVENT',
-      `UID:lucilla-visit-${options.nextVisitDate}@bariclip.local`,
+      `UID:lucilla-visit-${options.nextVisitDate}@lucilla.local`,
       `DTSTAMP:${dtStamp}`,
       `DTSTART:${formatIcsDateCompact(options.nextVisitDate, 10, 0)}`,
       `DTEND:${formatIcsDateCompact(options.nextVisitDate, 10, 45)}`,
@@ -600,7 +600,7 @@ export function buildPnlAudioScriptText(
     case 'come_se':
       return {
         title: 'Come Se — Magro Naturalmente',
-        scriptText: `${firstName}, chiudi per un istante gli occhi o fissa un punto morbido davanti a te. Immagina di camminare lungo un sentiero chiaro all'aria aperta come la versione di te già Magra Naturalmente in progress. Osserva come si muove questo te futuro: mastica con calma appoggiando la forchetta tra un boccone e l'altro, ascolta la sazietà confortevole a livello cinque o sei e sorride lasciando un piccolo boccone nel piatto quando è sazio. Chiediti con curiosità: quale piccola scelta semplice compie oggi questa parte saggia di me? Sceglila adesso con gioia e leggerezza.`,
+        scriptText: `${firstName}, chiudi per un istante gli occhi o fissa un punto morbido davanti a te. Immagina di camminare lungo un sentiero chiaro all'aria aperta come la versione di te già persona magra. Osserva come si muove questo te futuro: mastica con calma appoggiando la forchetta tra un boccone e l'altro, ascolta la sazietà confortevole a livello cinque o sei e sorride lasciando un piccolo boccone nel piatto quando è sazio. Chiediti con curiosità: quale piccola scelta semplice compie oggi questa parte saggia di me? Sceglila adesso con gioia e leggerezza.`,
       };
     case 'ancora_cinestesica':
       return {
@@ -692,7 +692,7 @@ export function buildDeterministicQuickMealIdeas(
       prepMinutes: 10,
       ingredients: ['220g filetto di orata', 'Finocchi e zucchine', '1 cucchiaio olio EVO + limone'],
       steps: 'Cuoci il pesce al vapore o in padella coperta con limone per 8 minuti insieme a zucchine a rondelle.',
-      bariclipTip: 'Bocconi piccoli e acqua lontano dai pasti per proteggere il Bariclip.',
+      bariclipTip: 'Bocconi piccoli e acqua lontano dai pasti per digerire con leggerezza.',
     });
   }
 

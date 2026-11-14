@@ -18,6 +18,7 @@ import {
   AMBIENT_TRACKS,
   ambientMusicEngine,
   AmbientTrackId,
+  parseCustomMusicUrl,
 } from './utils/ambientMusicEngine.ts';
 import {
   ChatAction,
@@ -121,13 +122,15 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
     resolveIsDarkTheme(loadInitialThemePreference())
   );
   const [musicPlaying, setMusicPlaying] = useState(false);
-  const [musicTrackId, setMusicTrackId] = useState<AmbientTrackId>(() =>
+  const [musicTrackId, setMusicTrackId] = useState<string>(() =>
     resolveDefaultTrackByHour()
   );
   const [musicVolume, setMusicVolume] = useState(0.45);
   const [musicDockDismissed, setMusicDockDismissed] = useState(false);
+  const [musicAudioError, setMusicAudioError] = useState<string | null>(null);
 
   const today = new Date().toISOString().slice(0, 10);
+  const customMusicTracks = state.profile.customMusicTracks ?? [];
 
   useEffect(() => {
     return () => {
@@ -135,22 +138,57 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
     };
   }, []);
 
+  function startTrackById(targetId: string, nextVolume = musicVolume) {
+    setMusicAudioError(null);
+    const custom = customMusicTracks.find((t) => t.id === targetId);
+    if (custom) {
+      const parsed = parseCustomMusicUrl(custom.url);
+      if (parsed.type === 'youtube' && parsed.embedUrl) {
+        ambientMusicEngine.stop();
+        setMusicTrackId(custom.id);
+        setMusicDockDismissed(false);
+        setMusicPlaying(true);
+        return;
+      }
+      if (parsed.type === 'audio' && parsed.audioUrl) {
+        setMusicTrackId(custom.id);
+        setMusicDockDismissed(false);
+        setMusicPlaying(true);
+        ambientMusicEngine.startExternalAudio(
+          custom.id,
+          parsed.audioUrl,
+          nextVolume,
+          (msg) => {
+            setMusicAudioError(msg);
+            setMusicPlaying(false);
+          }
+        );
+        return;
+      }
+      setMusicAudioError('Link musicale non valido. Controlla l’URL nelle Impostazioni.');
+      setMusicPlaying(false);
+      return;
+    }
+
+    const builtinId = (AMBIENT_TRACKS.find((t) => t.id === targetId)?.id ??
+      AMBIENT_TRACKS[0].id) as AmbientTrackId;
+    setMusicTrackId(builtinId);
+    setMusicDockDismissed(false);
+    ambientMusicEngine.start(builtinId, nextVolume);
+    setMusicPlaying(true);
+  }
+
   function handleToggleMusic() {
     if (musicPlaying) {
       ambientMusicEngine.stop();
       setMusicPlaying(false);
     } else {
-      ambientMusicEngine.start(musicTrackId, musicVolume);
-      setMusicPlaying(true);
-      setMusicDockDismissed(false);
+      startTrackById(musicTrackId, musicVolume);
     }
   }
 
-  function handleSelectMusicTrack(nextTrackId: AmbientTrackId) {
-    setMusicTrackId(nextTrackId);
-    setMusicDockDismissed(false);
-    ambientMusicEngine.start(nextTrackId, musicVolume);
-    setMusicPlaying(true);
+  function handleSelectMusicTrack(nextTrackId: string) {
+    startTrackById(nextTrackId, musicVolume);
   }
 
   function handleToggleTrackPreset(presetId: AmbientTrackId) {
@@ -158,10 +196,7 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
       ambientMusicEngine.stop();
       setMusicPlaying(false);
     } else {
-      setMusicTrackId(presetId);
-      setMusicDockDismissed(false);
-      ambientMusicEngine.start(presetId, musicVolume);
-      setMusicPlaying(true);
+      startTrackById(presetId, musicVolume);
     }
   }
 
@@ -171,9 +206,10 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
   }
 
   function handleNextMusicTrack() {
-    const idx = AMBIENT_TRACKS.findIndex((t) => t.id === musicTrackId);
-    const next = AMBIENT_TRACKS[(idx + 1) % AMBIENT_TRACKS.length];
-    handleSelectMusicTrack(next.id);
+    const allIds = [...AMBIENT_TRACKS.map((t) => t.id), ...customMusicTracks.map((c) => c.id)];
+    const idx = allIds.indexOf(musicTrackId);
+    const nextId = allIds[(idx + 1) % allIds.length] ?? AMBIENT_TRACKS[0].id;
+    startTrackById(nextId, musicVolume);
   }
 
   function handleStopAndHideMusic() {
@@ -620,7 +656,7 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
       id: 'msg_welcome',
       role: 'assistant',
       timestamp: nowTime,
-      content: `Benvenuto nel tuo percorso reale, ${state.profile.name.split(' ')[0]}! Da questo momento costruisci giorno per giorno il tuo nuovo equilibrio con presenza, ascolto del corpo e scelte da persona Magra Naturalmente. Come ti senti oggi e quale piccolo passo vuoi regalarti?`,
+      content: `Benvenuto nel tuo percorso reale, ${state.profile.name.split(' ')[0]}! Da questo momento costruisci giorno per giorno il tuo nuovo equilibrio con presenza, ascolto del corpo e scelte da persona magra. Come ti senti oggi e quale piccolo passo vuoi regalarti?`,
       actions: [
         { type: 'open_morning', label: 'Check-in Mattina & Sogni' },
         { type: 'open_sos', label: 'Surfa un’onda (/sos)' },
@@ -666,6 +702,12 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
     if (liveVoice.status === 'active' || liveVoice.status === 'connecting') {
       liveVoice.stopCall();
     } else {
+      setActiveTab('oggi');
+      window.setTimeout(() => {
+        document
+          .getElementById('coach-chat-panel')
+          ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 60);
       liveVoice.startCall();
     }
   }
@@ -711,7 +753,13 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
         onToggleTheme={handleQuickToggleTheme}
         xp={state.xp}
         liveStatus={liveVoice.status}
+        voiceTransport={liveVoice.voiceTransport}
+        isRecordingTurn={liveVoice.isRecordingTurn}
+        isProcessingTurn={liveVoice.isProcessingTurn}
         onToggleLiveCall={handleToggleLiveCall}
+        onSendVoiceTurn={liveVoice.sendVoiceTurn}
+        onStartNextVoiceTurn={liveVoice.startNextVoiceTurn}
+        onStopLiveCall={liveVoice.stopCall}
         onSignOut={() => {
           liveVoice.stopCall();
           ambientMusicEngine.stop();
@@ -720,7 +768,7 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
         }}
       />
 
-      {/* Persistent Cross-Tab Live Audio Bar when navigating away from Oggi & Coach */}
+      {/* Persistent Cross-Tab Live Audio Bar when navigating away from Oggi */}
       {(liveVoice.status === 'active' || liveVoice.status === 'connecting') && activeTab !== 'oggi' && (
         <div className="no-print border-b border-[#C6D5CE] bg-[#EDF3F0] px-4 py-2.5 text-xs dark:border-[#2F4E42] dark:bg-[#1F332C]">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 sm:px-2">
@@ -860,14 +908,17 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
               </div>
             </section>
 
-            {/* Ambient Calm Music Studio */}
+            {/* Rilassati con la musica */}
             <AmbientMusicStudio
               isPlaying={musicPlaying}
               trackId={musicTrackId}
+              customTracks={customMusicTracks}
               volume={musicVolume}
+              audioError={musicAudioError}
               onSelectTrack={handleSelectMusicTrack}
               onTogglePlay={handleToggleMusic}
               onChangeVolume={handleChangeMusicVolume}
+              onOpenMusicSettings={() => setProfileOpen(true)}
             />
 
             {/* Primary 2-Column Coach + Proactive Routines */}
@@ -971,6 +1022,7 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
         <AmbientMusicMiniBar
           isPlaying={musicPlaying}
           trackId={musicTrackId}
+          customTracks={customMusicTracks}
           volume={musicVolume}
           onTogglePlay={handleToggleMusic}
           onNextTrack={handleNextMusicTrack}

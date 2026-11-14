@@ -60,7 +60,7 @@ export function generateBardhoMarkdownReport(state: CoachState, referenceDate?: 
   return `# Report Clinico & Registro delle Prove — Dott.ssa Elida Bardho
 **Paziente:** ${state.profile.name} (${state.profile.heightCm} cm)
 **Data report:** ${today}
-**Intervento:** ${state.profile.surgeryType} (${state.profile.surgeryDate})
+**Percorso clinico dal:** ${state.profile.surgeryDate}
 **Clinico di riferimento:** ${state.profile.clinicianName} — ${state.profile.clinicianPhone} (${state.profile.clinicianEmail})
 
 ---
@@ -83,7 +83,7 @@ export function generateBardhoMarkdownReport(state: CoachState, referenceDate?: 
 
 ---
 
-## 3. Aderenza Frequenze Settimanali Piano Bariclip
+## 3. Aderenza Frequenze Settimanali Piano Alimentare
 ${proteinRows}
 
 ---

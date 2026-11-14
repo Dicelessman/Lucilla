@@ -20,10 +20,10 @@ export default defineConfig(({ command }) => {
         includeAssets: ['apple-touch-icon.png', 'icon.svg'],
         manifest: {
           id: './',
-          name: 'Lucilla — Coach Bariclip & PNL',
+          name: 'Lucilla — Coach & PNL',
           short_name: 'Lucilla',
           description:
-            'Coach quotidiano per abitudini emotive e alimentari post-Bariclip, protocollo Bardho e PNL Giusto Peso.',
+            'Coach quotidiano per abitudini emotive e alimentari, protocollo Bardho e PNL Giusto Peso.',
           theme_color: '#1F6E5C',
           background_color: '#F7F7F4',
           display: 'standalone',
@@ -88,7 +88,7 @@ export default defineConfig(({ command }) => {
     ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(import.meta.dirname, '.'),
       },
     },
     server: {

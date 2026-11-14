@@ -70,8 +70,13 @@ service cloud.firestore {
           'name', 'heightCm', 'surgeryType', 'surgeryDate', 'surgeryWeightKg',
           'surgeryBmi', 'lowestWeightKg', 'baselineWeightKg', 'baselineBmi',
           'baselineDate', 'baselineMeasuresCm', 'positiveGoal',
-          'clinicianName', 'clinicianPhone', 'clinicianEmail'
+          'clinicianName', 'clinicianPhone', 'clinicianEmail', 'customMusicTracks'
         ])
+        && (!('customMusicTracks' in data.profile) || (
+          data.profile.customMusicTracks is list
+          && data.profile.customMusicTracks.size() <= 12
+          && (data.profile.customMusicTracks.size() == 0 || data.profile.customMusicTracks[0] is map)
+        ))
         && isBoundedStr(data.profile.name, 1, 100)
         && isBoundedStr(data.profile.positiveGoal, 1, 500)
         && data.badges is list

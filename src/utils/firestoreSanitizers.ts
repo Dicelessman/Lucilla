@@ -1,6 +1,7 @@
 import {
   ChatMessage,
   ClinicalVisitEntry,
+  CustomMusicTrack,
   DailyCheckin,
   MealEntry,
   SosProvaEntry,
@@ -48,11 +49,35 @@ export function stripUndefined<T extends Record<string, unknown>>(obj: T): Recor
   return out;
 }
 
+export function sanitizeCustomMusicTracks(tracks: unknown): CustomMusicTrack[] {
+  if (!Array.isArray(tracks)) return [];
+  const out: CustomMusicTrack[] = [];
+  for (let i = 0; i < Math.min(tracks.length, 12); i++) {
+    const raw = tracks[i] as Partial<CustomMusicTrack> | undefined;
+    if (!raw || typeof raw !== 'object') continue;
+    const rawUrl = typeof raw.url === 'string' ? raw.url.trim() : '';
+    if (!/^https?:\/\/\S+$/i.test(rawUrl)) continue;
+    const id = sanitizeId(typeof raw.id === 'string' ? raw.id : `trk_${i + 1}`, 'trk');
+    const title = clampRequiredStr(raw.title, `Brano personale ${i + 1}`, 80);
+    out.push({
+      id,
+      title,
+      url: rawUrl.slice(0, 500),
+    });
+  }
+  return out;
+}
+
+export function normalizeLegacyGoalText(text: string): string {
+  return text.replace(/persona\s+magra\s+naturalmente\s+in\s+progress/gi, 'persona magra');
+}
+
 export function sanitizeProfile(profile: UserProfile): Record<string, unknown> {
-  return {
+  const customTracks = sanitizeCustomMusicTracks(profile.customMusicTracks);
+  return stripUndefined({
     name: clampRequiredStr(profile.name, 'Davide Rossi', 100),
     heightCm: clampNum(profile.heightCm, 184, 100, 250),
-    surgeryType: clampRequiredStr(profile.surgeryType, 'Bariclip', 60),
+    surgeryType: clampRequiredStr(profile.surgeryType, 'Percorso Clinico', 60),
     surgeryDate: clampRequiredStr(profile.surgeryDate, '2022-03-09', 16),
     surgeryWeightKg: clampNum(profile.surgeryWeightKg, 141, 30, 350),
     surgeryBmi: clampNum(profile.surgeryBmi, 41.6, 10, 100),
@@ -66,14 +91,15 @@ export function sanitizeProfile(profile: UserProfile): Record<string, unknown> {
       chest: clampNum(profile.baselineMeasuresCm?.chest, 129, 40, 250),
     },
     positiveGoal: clampRequiredStr(
-      profile.positiveGoal,
-      'Voglio pesare 109 kg (sotto i 110 kg), sentirmi leggero, energico e padrone delle mie scelte.',
+      normalizeLegacyGoalText(profile.positiveGoal || ''),
+      'Voglio pesare 109 kg (sotto i 110 kg), sentirmi leggero, energico e padrone delle mie scelte, vivendo come una persona magra.',
       500
     ),
     clinicianName: clampRequiredStr(profile.clinicianName, 'Dott.ssa Elida Bardho', 100),
     clinicianPhone: clampRequiredStr(profile.clinicianPhone, '335/6898371', 40),
     clinicianEmail: clampRequiredStr(profile.clinicianEmail, 'elibardho@gmail.com', 100),
-  };
+    customMusicTracks: Array.isArray(profile.customMusicTracks) ? customTracks : undefined,
+  });
 }
 
 export function sanitizeBadges(badges: StanzaBadge[]): Record<string, unknown>[] {
@@ -260,7 +286,7 @@ export function sanitizeClinicalVisitPayload(
       visit.weightAtVisitKg !== undefined
         ? clampNum(visit.weightAtVisitKg, 120, 30, 350)
         : undefined,
-    summaryNotes: clampRequiredStr(visit.summaryNotes, 'Visita di controllo Bariclip', 1200),
+    summaryNotes: clampRequiredStr(visit.summaryNotes, 'Visita di controllo clinico', 1200),
     nextFocus: clampRequiredStr(visit.nextFocus, 'Proseguire con costanza', 600),
     nextVisitDate: clampStr(visit.nextVisitDate, 16),
   });

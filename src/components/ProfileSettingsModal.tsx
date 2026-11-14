@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { X, Save, RotateCcw, Moon, Sun, Clock, AlertTriangle } from 'lucide-react';
-import { UserProfile } from '../types/coach.ts';
+import { X, Save, RotateCcw, Moon, Sun, Clock, AlertTriangle, Music, Plus, Trash2 } from 'lucide-react';
+import { CustomMusicTrack, UserProfile } from '../types/coach.ts';
 import { calculateBmi } from '../utils/bariclipRules.ts';
+import { parseCustomMusicUrl } from '../utils/ambientMusicEngine.ts';
 
 export type ThemePreference = 'light' | 'dark' | 'auto_evening';
 
@@ -39,6 +40,14 @@ export function ProfileSettingsModal({
   const [clinicianPhone, setClinicianPhone] = useState(profile.clinicianPhone);
   const [clinicianEmail, setClinicianEmail] = useState(profile.clinicianEmail);
 
+  const [customTracks, setCustomTracks] = useState<CustomMusicTrack[]>(
+    profile.customMusicTracks ?? []
+  );
+  const [newTrackTitle, setNewTrackTitle] = useState('');
+  const [newTrackUrl, setNewTrackUrl] = useState('');
+  const [musicFormError, setMusicFormError] = useState<string | null>(null);
+  const [savingMusic, setSavingMusic] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
 
@@ -59,6 +68,10 @@ export function ProfileSettingsModal({
       setClinicianName(profile.clinicianName);
       setClinicianPhone(profile.clinicianPhone);
       setClinicianEmail(profile.clinicianEmail);
+      setCustomTracks(profile.customMusicTracks ?? []);
+      setNewTrackTitle('');
+      setNewTrackUrl('');
+      setMusicFormError(null);
       setShowResetBox(false);
       setSavedMsg(null);
     }
@@ -66,26 +79,86 @@ export function ProfileSettingsModal({
 
   if (!isOpen) return null;
 
+  function buildUpdatedProfile(nextTracks: CustomMusicTrack[]): UserProfile {
+    return {
+      ...profile,
+      heightCm,
+      baselineWeightKg,
+      baselineBmi: calculateBmi(baselineWeightKg, heightCm),
+      baselineMeasuresCm: {
+        umbilical,
+        hips,
+        chest,
+      },
+      positiveGoal: positiveGoal.trim() || profile.positiveGoal,
+      clinicianName: clinicianName.trim() || profile.clinicianName,
+      clinicianPhone: clinicianPhone.trim() || profile.clinicianPhone,
+      clinicianEmail: clinicianEmail.trim() || profile.clinicianEmail,
+      customMusicTracks: nextTracks,
+    };
+  }
+
+  async function handleAddMusicTrack() {
+    setMusicFormError(null);
+    const trimmedUrl = newTrackUrl.trim();
+    const parsed = parseCustomMusicUrl(trimmedUrl);
+    if (parsed.type === 'invalid') {
+      setMusicFormError(
+        'Inserisci un link valido YouTube (youtube.com / youtu.be) oppure un URL diretto http/https a un file audio gratuito (es. MP3, OGG).'
+      );
+      return;
+    }
+    if (customTracks.length >= 12) {
+      setMusicFormError('Puoi salvare fino a 12 link musicali personali.');
+      return;
+    }
+
+    const cleanTitle =
+      newTrackTitle.trim().slice(0, 80) ||
+      (parsed.type === 'youtube'
+        ? `YouTube · Brano ${customTracks.length + 1}`
+        : `Audio · Brano ${customTracks.length + 1}`);
+
+    const nextTracks: CustomMusicTrack[] = [
+      ...customTracks,
+      {
+        id: `custom_${Date.now()}`,
+        title: cleanTitle,
+        url: trimmedUrl.slice(0, 500),
+      },
+    ];
+
+    setSavingMusic(true);
+    try {
+      setCustomTracks(nextTracks);
+      setNewTrackTitle('');
+      setNewTrackUrl('');
+      await onSaveProfile(buildUpdatedProfile(nextTracks), weighDay);
+      setSavedMsg('Link musicale aggiunto e salvato su cloud.');
+      setTimeout(() => setSavedMsg(null), 3000);
+    } finally {
+      setSavingMusic(false);
+    }
+  }
+
+  async function handleRemoveMusicTrack(trackId: string) {
+    const nextTracks = customTracks.filter((t) => t.id !== trackId);
+    setSavingMusic(true);
+    try {
+      setCustomTracks(nextTracks);
+      await onSaveProfile(buildUpdatedProfile(nextTracks), weighDay);
+      setSavedMsg('Link musicale rimosso.');
+      setTimeout(() => setSavedMsg(null), 2500);
+    } finally {
+      setSavingMusic(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
-      const updatedProfile: UserProfile = {
-        ...profile,
-        heightCm,
-        baselineWeightKg,
-        baselineBmi: calculateBmi(baselineWeightKg, heightCm),
-        baselineMeasuresCm: {
-          umbilical,
-          hips,
-          chest,
-        },
-        positiveGoal: positiveGoal.trim() || profile.positiveGoal,
-        clinicianName: clinicianName.trim() || profile.clinicianName,
-        clinicianPhone: clinicianPhone.trim() || profile.clinicianPhone,
-        clinicianEmail: clinicianEmail.trim() || profile.clinicianEmail,
-      };
-      await onSaveProfile(updatedProfile, weighDay);
+      await onSaveProfile(buildUpdatedProfile(customTracks), weighDay);
       setSavedMsg('Profilo clinico e preferenze salvati su cloud.');
       setTimeout(() => setSavedMsg(null), 3000);
     } finally {
@@ -137,6 +210,12 @@ export function ProfileSettingsModal({
 
         {/* Body */}
         <div className="flex-1 space-y-6 overflow-y-auto px-6 py-5">
+          {savedMsg && (
+            <div className="rounded-lg border border-[#C6D5CE] bg-[#EDF3F0] px-3.5 py-2.5 text-xs font-medium text-[#182420] dark:border-[#2F4E42] dark:bg-[#1F332C] dark:text-[#EAECE6]">
+              {savedMsg}
+            </div>
+          )}
+
           {/* Theme Preference */}
           <section className="rounded-xl border border-[#E4E6E0] bg-[#F8F9F6] p-4 dark:border-[#2B3732] dark:bg-[#161D1A]">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-[#1F6E5C] dark:text-[#36A68C]">
@@ -172,14 +251,88 @@ export function ProfileSettingsModal({
             </div>
           </section>
 
-          {/* Editable Clinical Profile Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {savedMsg && (
-              <div className="rounded-lg border border-[#C6D5CE] bg-[#EDF3F0] px-3.5 py-2.5 text-xs font-medium text-[#182420] dark:border-[#2F4E42] dark:bg-[#1F332C] dark:text-[#EAECE6]">
-                {savedMsg}
-              </div>
+          {/* Custom Music Links Section */}
+          <section className="rounded-xl border border-[#E4E6E0] bg-[#F8F9F6] p-4 dark:border-[#2B3732] dark:bg-[#161D1A]">
+            <div className="flex items-center gap-2">
+              <Music className="h-4 w-4 text-[#1F6E5C] dark:text-[#36A68C]" />
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[#1F6E5C] dark:text-[#36A68C]">
+                Rilassati con la musica — I tuoi link (YouTube o Audio)
+              </h3>
+            </div>
+            <p className="mt-1 text-xs text-[#5C6762] dark:text-[#A3B0AA]">
+              Aggiungi link YouTube (video o playlist) oppure URL diretti a file audio gratuiti (.mp3, .ogg, radio web) per ascoltarli dalla sezione Rilassati con la musica.
+            </p>
+
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-12">
+              <input
+                type="text"
+                aria-label="Titolo brano"
+                placeholder="Titolo (es. Lofi Sera)"
+                value={newTrackTitle}
+                onChange={(e) => setNewTrackTitle(e.target.value)}
+                className="rounded-lg border border-[#D7DBD2] bg-white px-3 py-2 text-xs text-[#182420] focus:border-[#1F6E5C] focus:outline-none sm:col-span-4 dark:border-[#33423C] dark:bg-[#1B231F] dark:text-[#EAECE6]"
+              />
+              <input
+                type="url"
+                aria-label="URL musica YouTube o audio"
+                placeholder="https://www.youtube.com/watch?v=... oppure .../audio.mp3"
+                value={newTrackUrl}
+                onChange={(e) => setNewTrackUrl(e.target.value)}
+                className="rounded-lg border border-[#D7DBD2] bg-white px-3 py-2 text-xs text-[#182420] focus:border-[#1F6E5C] focus:outline-none sm:col-span-6 dark:border-[#33423C] dark:bg-[#1B231F] dark:text-[#EAECE6]"
+              />
+              <button
+                type="button"
+                disabled={savingMusic || !newTrackUrl.trim()}
+                onClick={handleAddMusicTrack}
+                className="inline-flex items-center justify-center gap-1 rounded-lg bg-[#1F6E5C] px-3 py-2 text-xs font-semibold text-white hover:bg-[#185849] disabled:opacity-50 sm:col-span-2"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Aggiungi</span>
+              </button>
+            </div>
+
+            {musicFormError && (
+              <p className="mt-2 text-xs text-[#B91C1C] dark:text-[#FCA5A5]">{musicFormError}</p>
             )}
 
+            {customTracks.length > 0 && (
+              <ul className="mt-3 space-y-1.5">
+                {customTracks.map((trk) => {
+                  const source = parseCustomMusicUrl(trk.url);
+                  return (
+                    <li
+                      key={trk.id}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-[#E4E6E0] bg-white px-3 py-2 text-xs dark:border-[#2B3732] dark:bg-[#1B231F]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-[#182420] dark:text-[#EAECE6]">
+                          {trk.title}{' '}
+                          <span className="font-mono text-[10px] uppercase text-[#1F6E5C] dark:text-[#36A68C]">
+                            ({source.type === 'youtube' ? 'YouTube' : 'Audio'})
+                          </span>
+                        </p>
+                        <p className="truncate text-[11px] text-[#5C6762] dark:text-[#A3B0AA]">
+                          {trk.url}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={savingMusic}
+                        onClick={() => handleRemoveMusicTrack(trk.id)}
+                        aria-label={`Rimuovi ${trk.title}`}
+                        className="rounded-md p-1.5 text-[#5C6762] hover:bg-[#FEF2F2] hover:text-[#B91C1C] dark:text-[#A3B0AA] dark:hover:bg-[#2A1717] dark:hover:text-[#FCA5A5]"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+
+          {/* Editable Clinical Profile Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label
                 htmlFor="prof-goal"

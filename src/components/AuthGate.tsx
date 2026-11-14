@@ -103,7 +103,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
             <EditorialImage
               src={authBotanicalImg}
               alt="Rami di ulivo, foglie di salvia e tisana calda alla finestra"
-              caption="Spazio personale · PNL & Bariclip"
+              caption="Spazio personale · PNL & Benessere"
               className="h-full w-full"
             />
           </div>
@@ -124,7 +124,7 @@ export const AuthGate: React.FC<AuthGateProps> = ({ children }) => {
             </h1>
 
             <p className="mt-2 text-sm leading-relaxed text-[#5C6762] dark:text-[#A3B0AA]">
-              Accedi con il tuo account Google personale per aprire il diario Bariclip, le routine PNL
+              Accedi con il tuo account Google personale per aprire il diario alimentare, le routine PNL
               e le sessioni vocali Live con Lucilla in modo protetto.
             </p>
 

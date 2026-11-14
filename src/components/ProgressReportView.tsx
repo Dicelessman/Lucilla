@@ -534,7 +534,7 @@ export function ProgressReportView({
 
             <div className="border-t border-[#E4E6E0] pt-4 lg:col-span-6 lg:border-t-0 lg:border-l lg:pl-6 lg:pt-0 dark:border-[#2B3732]">
               <h3 className="text-sm font-semibold text-[#182420] dark:text-[#EAECE6]">
-                Copertura Frequenze Settimanali Bariclip
+                Copertura Frequenze Settimanali (Piano Bardho)
               </h3>
               <p className="mt-0.5 text-xs text-[#5C6762] dark:text-[#A3B0AA]">
                 Riepilogo attuale dalla settimana in corso
@@ -816,7 +816,7 @@ export function ProgressReportView({
               Registro delle Prove &amp; Report Clinico — {state.profile.clinicianName}
             </h2>
             <p className="text-xs text-[#5C6762] dark:text-[#A3B0AA]">
-              {state.profile.name} · Intervento {state.profile.surgeryType} ({state.profile.surgeryDate}) · {state.profile.clinicianPhone}
+              {state.profile.name} · Percorso clinico dal {state.profile.surgeryDate} · {state.profile.clinicianPhone}
             </p>
           </div>
 

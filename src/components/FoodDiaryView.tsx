@@ -337,7 +337,7 @@ export function FoodDiaryView({
       (item) => `${checkedShopIds[item.id] ? '[x]' : '[ ]'} ${item.name} — ${item.quantityNote}`
     );
     navigator.clipboard.writeText(
-      `Lista Spesa Settimanale Bariclip (Davide)\n\n${lines.join('\n')}`
+      `Lista Spesa Settimanale (Davide)\n\n${lines.join('\n')}`
     );
     setCopiedShop(true);
     setTimeout(() => setCopiedShop(false), 2500);
@@ -498,7 +498,7 @@ export function FoodDiaryView({
                     </div>
                     {analyzingPhoto ? (
                       <p className="mt-1 text-[#5C6762] dark:text-[#A3B0AA]">
-                        Lucilla sta leggendo ingredienti e porzioni Bariclip...
+                        Lucilla sta leggendo ingredienti e porzioni...
                       </p>
                     ) : (
                       <>
@@ -525,7 +525,7 @@ export function FoodDiaryView({
                   <div className="flex items-center gap-1.5 font-semibold text-[#B91C1C] dark:text-[#FCA5A5]">
                     <AlertTriangle className="h-4 w-4" />
                     <span>
-                      Segnale Bariclip rilevato ({lastValidation.redFlagSymptoms.join(', ')})
+                      Segnale fisico rilevato ({lastValidation.redFlagSymptoms.join(', ')})
                     </span>
                   </div>
                   <p className="mt-1">
@@ -739,10 +739,10 @@ export function FoodDiaryView({
               </label>
             </div>
 
-            {/* Red Flag Bariclip Symptoms Check */}
+            {/* Red Flag Physical Symptoms Check */}
             <div>
               <span className="block text-xs font-medium text-[#5C6762] dark:text-[#A3B0AA]">
-                Eventuali segnali fisici post-Bariclip (opzionale):
+                Eventuali segnali fisici post-pasto (opzionale):
               </span>
               <div className="mt-1.5 flex flex-wrap gap-2">
                 {SYMPTOM_OPTIONS.map((sym) => {
@@ -794,13 +794,13 @@ export function FoodDiaryView({
             <EditorialImage
               src={mediterraneanBowlImg}
               alt="Piatto mediterraneo equilibrato con pesce, verdure e olio extravergine"
-              caption="Piatto tipo Bariclip · 1 proteina, verdure e olio EVO"
+              caption="Piatto equilibrato · 1 proteina, verdure e olio EVO"
               className="h-36 w-full"
             />
           </div>
 
           <section
-            aria-label="Frequenze settimanali piano Bariclip"
+            aria-label="Frequenze settimanali piano nutrizionale"
             className="rounded-xl border border-[#E4E6E0] bg-white p-5 dark:border-[#2B3732] dark:bg-[#1B231F]"
           >
             <h2 className="font-editorial text-lg font-medium text-[#182420] dark:text-[#EAECE6]">

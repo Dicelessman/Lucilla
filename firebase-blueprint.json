@@ -2,7 +2,7 @@
   "entities": {
     "UserCoachProfile": {
       "title": "UserCoachProfile",
-      "description": "Profilo clinico Bariclip di Davide Rossi, XP, sfida attiva e badge Stanze del Valore.",
+      "description": "Profilo clinico e preferenze di Davide Rossi (inclusi customMusicTracks), XP, sfida attiva e badge Stanze del Valore.",
       "type": "object",
       "properties": {
         "ownerUid": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
@@ -19,7 +19,7 @@
     },
     "MealEntry": {
       "title": "MealEntry",
-      "description": "Pasto registrato nel Diario Alimentare Consapevole con scala sazietà e controlli Bariclip.",
+      "description": "Pasto registrato nel Diario Alimentare Consapevole con scala sazietà e controlli del piano nutrizionale.",
       "type": "object",
       "properties": {
         "ownerUid": { "type": "string", "maxLength": 128 },
