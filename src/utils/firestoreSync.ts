@@ -497,6 +497,7 @@ export async function upsertCheckinToFirestore(
       sleepQuality: payload.sleepQuality,
       dreamJournal: payload.dreamJournal,
       morningDomandeNotes: payload.morningDomandeNotes,
+      morningUsefulNotes: payload.morningUsefulNotes,
       kinestheticAnchorDone: payload.kinestheticAnchorDone,
       movementMinutes: payload.movementMinutes,
       afternoonParachuteDone: payload.afternoonParachuteDone,

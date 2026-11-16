@@ -101,6 +101,7 @@ export interface DailyCheckin {
   sleepQuality?: 1 | 2 | 3 | 4 | 5;
   dreamJournal?: string;
   morningDomandeNotes?: string;
+  morningUsefulNotes?: string;
   kinestheticAnchorDone?: boolean;
   movementMinutes?: number;
   afternoonParachuteDone?: boolean;

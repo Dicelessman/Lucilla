@@ -1183,7 +1183,9 @@ async function startServer() {
         middlewareMode: true,
         allowedHosts: true,
         hmr: !hmrDisabled,
-        ws: hmrDisabled ? false : { server: httpServer, path: '/vite-hmr' },
+        // Keep Vite's WS transport bound to httpServer even when HMR is disabled so
+        // /@vite/client does not fall back to port 24678 and log WebSocket closed errors.
+        ws: { server: httpServer, path: '/vite-hmr' },
       },
       appType: 'spa',
     });

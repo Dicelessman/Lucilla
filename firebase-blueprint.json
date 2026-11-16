@@ -80,6 +80,7 @@
         "sleepQuality": { "type": "number" },
         "dreamJournal": { "type": "string", "maxLength": 2000 },
         "morningDomandeNotes": { "type": "string", "maxLength": 1000 },
+        "morningUsefulNotes": { "type": "string", "maxLength": 2000 },
         "kinestheticAnchorDone": { "type": "boolean" },
         "movementMinutes": { "type": "number" },
         "afternoonParachuteDone": { "type": "boolean" },

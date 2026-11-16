@@ -11,12 +11,13 @@ import {
   SlidersHorizontal,
   Moon,
   Sun,
+  Sunrise,
 } from 'lucide-react';
 import { PWAInstallButton } from './PWAInstallButton.tsx';
 import { SignOutButton } from './AuthGate.tsx';
 import { LiveStatus, VoiceTransport } from '../hooks/useLiveVoice.ts';
 
-export type ActiveTab = 'oggi' | 'diario' | 'pnl' | 'report';
+export type ActiveTab = 'buongiorno' | 'oggi' | 'diario' | 'pnl' | 'report';
 
 interface TopNavProps {
   activeTab: ActiveTab;
@@ -40,12 +41,14 @@ interface TopNavProps {
 const NAV_ITEMS: Array<{
   id: ActiveTab;
   label: string;
+  mobileLabel: string;
   icon: React.ComponentType<{ className?: string }>;
 }> = [
-  { id: 'oggi', label: 'Oggi', icon: MessageCircleHeart },
-  { id: 'diario', label: 'Diario & Piano', icon: BookOpen },
-  { id: 'pnl', label: 'Strumenti PNL', icon: Compass },
-  { id: 'report', label: 'Progressi & Report', icon: BarChart3 },
+  { id: 'buongiorno', label: 'Buongiorno', mobileLabel: 'Buongiorno', icon: Sunrise },
+  { id: 'oggi', label: 'Oggi', mobileLabel: 'Oggi', icon: MessageCircleHeart },
+  { id: 'diario', label: 'Diario & Piano', mobileLabel: 'Diario', icon: BookOpen },
+  { id: 'pnl', label: 'Strumenti PNL', mobileLabel: 'PNL', icon: Compass },
+  { id: 'report', label: 'Progressi & Report', mobileLabel: 'Report', icon: BarChart3 },
 ];
 
 export function TopNav({
@@ -256,7 +259,7 @@ export function TopNav({
               }`}
             >
               <Icon className="h-4 w-4" />
-              <span className="truncate">{item.label.split(' & ')[0]}</span>
+              <span className="truncate">{item.mobileLabel}</span>
             </button>
           );
         })}

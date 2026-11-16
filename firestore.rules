@@ -151,7 +151,7 @@ service cloud.firestore {
       return data.keys().hasAll(['ownerUid', 'id', 'date', 'createdAt', 'updatedAt'])
         && data.keys().hasOnly([
           'ownerUid', 'id', 'date', 'sleepHours', 'sleepQuality', 'dreamJournal',
-          'morningDomandeNotes', 'kinestheticAnchorDone', 'movementMinutes',
+          'morningDomandeNotes', 'morningUsefulNotes', 'kinestheticAnchorDone', 'movementMinutes',
           'afternoonParachuteDone', 'afternoonSnackChoice', 'eveningSuccess',
           'eveningEmotionType', 'eveningRepairOrCompassion', 'eveningRitualDone',
           'eveningRitualChoice', 'hydrationGlasses', 'hydrationAwayFromMealsDone',
@@ -165,6 +165,7 @@ service cloud.firestore {
         && (!('sleepQuality' in data) || isNumRange(data.sleepQuality, 1, 5))
         && isOptStr(data, 'dreamJournal', 2000)
         && isOptStr(data, 'morningDomandeNotes', 1000)
+        && isOptStr(data, 'morningUsefulNotes', 2000)
         && (!('kinestheticAnchorDone' in data) || data.kinestheticAnchorDone is bool)
         && (!('movementMinutes' in data) || isNumRange(data.movementMinutes, 0, 600))
         && (!('afternoonParachuteDone' in data) || data.afternoonParachuteDone is bool)
@@ -335,11 +336,11 @@ service cloud.firestore {
           && incoming().updatedAt == request.time
           && incoming().diff(existing()).affectedKeys().hasOnly([
             'sleepHours', 'sleepQuality', 'dreamJournal', 'morningDomandeNotes',
-            'kinestheticAnchorDone', 'movementMinutes', 'afternoonParachuteDone',
-            'afternoonSnackChoice', 'eveningSuccess', 'eveningEmotionType',
-            'eveningRepairOrCompassion', 'eveningRitualDone', 'eveningRitualChoice',
-            'hydrationGlasses', 'hydrationAwayFromMealsDone', 'hydrationXpAwarded',
-            'updatedAt'
+            'morningUsefulNotes', 'kinestheticAnchorDone', 'movementMinutes',
+            'afternoonParachuteDone', 'afternoonSnackChoice', 'eveningSuccess',
+            'eveningEmotionType', 'eveningRepairOrCompassion', 'eveningRitualDone',
+            'eveningRitualChoice', 'hydrationGlasses', 'hydrationAwayFromMealsDone',
+            'hydrationXpAwarded', 'updatedAt'
           ]);
         allow delete: if isValidId(userId) && isValidId(checkinId) && isVerifiedPersonalUser(userId);
       }

@@ -172,6 +172,7 @@ export function sanitizeCheckinPayload(checkin: DailyCheckin, uid: string): Reco
       checkin.sleepQuality !== undefined ? clampNum(checkin.sleepQuality, 3, 1, 5) : undefined,
     dreamJournal: clampStr(checkin.dreamJournal, 2000),
     morningDomandeNotes: clampStr(checkin.morningDomandeNotes, 1000),
+    morningUsefulNotes: clampStr(checkin.morningUsefulNotes, 2000),
     kinestheticAnchorDone:
       checkin.kinestheticAnchorDone !== undefined
         ? Boolean(checkin.kinestheticAnchorDone)

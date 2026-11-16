@@ -12,6 +12,8 @@ import { PnlToolsView } from './components/PnlToolsView.tsx';
 import { ProgressReportView } from './components/ProgressReportView.tsx';
 import { ProfileSettingsModal, ThemePreference } from './components/ProfileSettingsModal.tsx';
 import { AmbientMusicMiniBar, AmbientMusicStudio } from './components/AmbientMusicStudio.tsx';
+import { BuongiornoView } from './components/BuongiornoView.tsx';
+import { DreamPrintSheet } from './components/DreamJournalArchive.tsx';
 import { EditorialImage } from './components/EditorialImage.tsx';
 import heroBotanicalImg from './assets/images/lucilla_botanical_hero_1794581848374.jpg';
 import {
@@ -109,11 +111,12 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
   const [state, setState] = useState<CoachState>(() => createInitialSeedState());
   const [loading, setLoading] = useState(true);
   const [syncError, setSyncError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('oggi');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('buongiorno');
   const [sosOpen, setSosOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [isSendingChat, setIsSendingChat] = useState(false);
   const [radioOpenSignal, setRadioOpenSignal] = useState(false);
+  const [dreamInsights, setDreamInsights] = useState<Record<string, string>>({});
 
   const [themePreference, setThemePreference] = useState<ThemePreference>(() =>
     loadInitialThemePreference()
@@ -417,7 +420,7 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
     if (action === 'open_ruota') setActiveTab('pnl');
     if (action === 'open_report') setActiveTab('report');
     if (action === 'open_diary') setActiveTab('diario');
-    if (action === 'open_morning') setActiveTab('oggi');
+    if (action === 'open_morning') setActiveTab('buongiorno');
   }
 
   function handleSaveCheckin(updated: DailyCheckin, xpDelta = 0) {
@@ -600,6 +603,42 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
     });
   }
 
+  function handleSaveMorningWeight(weightKg: number) {
+    const existingToday = state.measurements.find((m) => m.date === today);
+    if (existingToday) {
+      handleUpdateMeasurement({
+        ...existingToday,
+        weightKg,
+        advisorNote: existingToday.advisorNote || 'Peso del mattino (Buongiorno)',
+      });
+    } else {
+      handleAddMeasurement({
+        id: `meas_${Date.now()}`,
+        date: today,
+        weightKg,
+        advisorNote: 'Peso del mattino (Buongiorno)',
+      });
+    }
+  }
+
+  function handleSaveDreamInsight(checkinId: string, insight: string) {
+    setDreamInsights((prev) => ({ ...prev, [checkinId]: insight }));
+  }
+
+  function handlePrintDreams() {
+    const root = document.documentElement;
+    root.classList.add('printing-dreams');
+    let cleaned = false;
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      root.classList.remove('printing-dreams');
+    };
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.setTimeout(cleanup, 60000);
+    window.print();
+  }
+
   function handleAddClinicalVisit(visit: ClinicalVisitEntry) {
     setState((prev) => ({
       ...prev,
@@ -678,6 +717,7 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
 
     await resetToCleanStartInFirestore(user.uid, freshWelcome, baselineMeasurement);
 
+    setDreamInsights({});
     setState((prev) => ({
       ...prev,
       xp: 0,
@@ -741,7 +781,8 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F7F4] text-[#182420] dark:bg-[#131917] dark:text-[#EAECE6]">
+    <>
+    <div className="app-screen-shell min-h-screen bg-[#F7F7F4] text-[#182420] dark:bg-[#131917] dark:text-[#EAECE6]">
       <OfflineIndicator />
 
       <TopNav
@@ -858,6 +899,30 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
           </div>
         )}
 
+        {activeTab === 'buongiorno' && (
+          <BuongiornoView
+            todayDate={today}
+            checkin={todayCheckin}
+            allCheckins={state.checkins}
+            measurements={state.measurements}
+            onSaveCheckin={handleSaveCheckin}
+            onSaveMorningWeight={handleSaveMorningWeight}
+            musicPlaying={musicPlaying}
+            musicTrackId={musicTrackId}
+            customMusicTracks={customMusicTracks}
+            musicVolume={musicVolume}
+            musicAudioError={musicAudioError}
+            onSelectMusicTrack={handleSelectMusicTrack}
+            onToggleMusicPlay={handleToggleMusic}
+            onChangeMusicVolume={handleChangeMusicVolume}
+            onOpenMusicSettings={() => setProfileOpen(true)}
+            dreamInsights={dreamInsights}
+            onSaveDreamInsight={handleSaveDreamInsight}
+            getIdToken={getIdToken}
+            onPrintDreams={handlePrintDreams}
+          />
+        )}
+
         {activeTab === 'oggi' && (
           <div className="space-y-6">
             {/* Compact Overview Header Strip with Botanical Editorial Artwork */}
@@ -954,18 +1019,10 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
                 <DailyRoutinesCard
                   todayDate={today}
                   checkin={todayCheckin}
-                  activeChallenge={activeChallenge}
                   onSaveCheckin={handleSaveCheckin}
                   todayMealsCount={todayMealsCount}
                   weeklyMovementMinutes={weeklyMovementMinutes}
-                  onOpenDreamArchive={() => {
-                    setActiveTab('pnl');
-                    window.setTimeout(() => {
-                      document
-                        .getElementById('dream-archive-section')
-                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 120);
-                  }}
+                  onOpenBuongiorno={() => setActiveTab('buongiorno')}
                 />
               </div>
             </div>
@@ -1003,6 +1060,9 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
             getIdToken={getIdToken}
             ambientMusicPlaying={musicPlaying}
             onToggleAmbientMusic={handleToggleMusic}
+            dreamInsights={dreamInsights}
+            onSaveDreamInsight={handleSaveDreamInsight}
+            onPrintDreams={handlePrintDreams}
           />
         )}
 
@@ -1018,7 +1078,7 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
         )}
       </main>
 
-      {musicPlaying && !musicDockDismissed && activeTab !== 'oggi' && (
+      {musicPlaying && !musicDockDismissed && activeTab !== 'oggi' && activeTab !== 'buongiorno' && (
         <AmbientMusicMiniBar
           isPlaying={musicPlaying}
           trackId={musicTrackId}
@@ -1051,6 +1111,12 @@ function AuthenticatedCoachApp({ user, onSignOut }: AuthenticatedCoachAppProps) 
         onResetDemoData={handleResetDemoData}
       />
     </div>
+    <DreamPrintSheet
+      profileName={state.profile.name}
+      checkins={state.checkins}
+      dreamInsights={dreamInsights}
+    />
+    </>
   );
 }
 

@@ -12,12 +12,11 @@ import {
   Trash2,
   X,
   Play,
-  BookMarked,
-  Sparkles,
   Activity,
   Music,
   Pause,
 } from 'lucide-react';
+import { DreamJournalArchive } from './DreamJournalArchive.tsx';
 import { EditorialImage } from './EditorialImage.tsx';
 import pnlCalmLandscapeImg from '../assets/images/pnl_calm_landscape_1794581848656.jpg';
 import {
@@ -57,6 +56,9 @@ interface PnlToolsViewProps {
   getIdToken: () => Promise<string | null>;
   ambientMusicPlaying?: boolean;
   onToggleAmbientMusic?: () => void;
+  dreamInsights: Record<string, string>;
+  onSaveDreamInsight: (checkinId: string, insight: string) => void;
+  onPrintDreams: () => void;
 }
 
 export function PnlToolsView({
@@ -76,15 +78,15 @@ export function PnlToolsView({
   getIdToken,
   ambientMusicPlaying = false,
   onToggleAmbientMusic,
+  dreamInsights,
+  onSaveDreamInsight,
+  onPrintDreams,
 }: PnlToolsViewProps) {
   const today = new Date().toISOString().slice(0, 10);
   const stage = getLearningStage(xp);
   const latestWheel = wheelAssessments[wheelAssessments.length - 1];
   const { weeklyMovementMinutes } = calculateWeeklyMovementAndHydration(checkins, today);
   const weeklyMovementPercent = Math.min(100, Math.round((weeklyMovementMinutes / 150) * 100));
-  const dreamEntries = [...checkins]
-    .filter((c) => Boolean(c.dreamJournal?.trim()))
-    .sort((a, b) => b.date.localeCompare(a.date));
 
   // Ruota della Vita state
   const [areas, setAreas] = useState<WheelAreaScore[]>(
@@ -143,11 +145,6 @@ export function PnlToolsView({
     return Notification.permission;
   });
   const [reminderNotice, setReminderNotice] = useState<string | null>(null);
-
-  // Dream Journal Archive + NLP Insights state
-  const [dreamInsights, setDreamInsights] = useState<Record<string, string>>({});
-  const [loadingDreamId, setLoadingDreamId] = useState<string | null>(null);
-  const [dreamInsightError, setDreamInsightError] = useState<string | null>(null);
 
   function updateArea(areaId: string, field: 'sa' | 'sd', value: number) {
     setAreas((prev) =>
@@ -284,34 +281,6 @@ export function PnlToolsView({
       });
       localStorage.setItem('lucilla_browser_reminders', 'enabled');
       setReminderNotice('Notifiche del browser attivate su questo dispositivo.');
-    }
-  }
-
-  async function handleRequestDreamInsight(checkinId: string, dreamText: string, date: string) {
-    setDreamInsightError(null);
-    setLoadingDreamId(checkinId);
-    try {
-      const token = await getIdToken();
-      if (!token) throw new Error('Accesso richiesto per ricevere lo spunto PNL di Lucilla.');
-      const res = await fetch('/api/dream-insight', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ dreamText, date }),
-      });
-      const data = (await res.json()) as { insight?: string; error?: string };
-      if (!res.ok || !data.insight) {
-        throw new Error(data.error || 'Impossibile elaborare lo spunto PNL in questo momento.');
-      }
-      setDreamInsights((prev) => ({ ...prev, [checkinId]: data.insight! }));
-    } catch (err) {
-      setDreamInsightError(
-        err instanceof Error ? err.message : 'Errore nella richiesta dello spunto PNL.'
-      );
-    } finally {
-      setLoadingDreamId(null);
     }
   }
 
@@ -703,93 +672,14 @@ export function PnlToolsView({
       </div>
 
       {/* Archivio Diario dei Sogni & Spunti PNL */}
-      <section
+      <DreamJournalArchive
         id="dream-archive-section"
-        aria-label="Archivio Diario dei Sogni e spunti PNL"
-        className="rounded-xl border border-[#E4E6E0] bg-white p-5 dark:border-[#2B3732] dark:bg-[#1B231F]"
-      >
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E4E6E0] pb-3.5 dark:border-[#2B3732]">
-          <div className="flex items-center gap-2">
-            <BookMarked className="h-5 w-5 text-[#1F6E5C] dark:text-[#36A68C]" />
-            <div>
-              <h2 className="font-editorial text-lg font-medium text-[#182420] dark:text-[#EAECE6]">
-                Archivio Diario dei Sogni &amp; Spunti PNL
-              </h2>
-              <p className="text-xs text-[#5C6762] dark:text-[#A3B0AA]">
-                Raccolta cronologica dei sogni annotati al risveglio: trasforma immagini ed emozioni in risorse positive.
-              </p>
-            </div>
-          </div>
-          <span className="font-mono text-xs font-semibold tabular-nums text-[#1F6E5C] dark:text-[#36A68C]">
-            {dreamEntries.length} {dreamEntries.length === 1 ? 'sogno' : 'sogni'}
-          </span>
-        </div>
-
-        {dreamInsightError && (
-          <p className="mt-3 rounded-lg border border-[#FCA5A5] bg-[#FEF2F2] px-3 py-2 text-xs text-[#991B1B] dark:border-[#7F1D1D] dark:bg-[#2A1717] dark:text-[#FCA5A5]">
-            {dreamInsightError}
-          </p>
-        )}
-
-        {dreamEntries.length === 0 ? (
-          <div className="mt-4 rounded-xl border border-[#E4E6E0] bg-[#FAFBF8] p-4 text-xs leading-relaxed text-[#5C6762] dark:border-[#2B3732] dark:bg-[#161D1A] dark:text-[#A3B0AA]">
-            Nessun sogno salvato finora. Compila il riquadro “Diario dei Sogni” nel Check-in Mattina per custodire qui le tue tracce notturne e chiedere uno spunto di PNL a Lucilla.
-          </div>
-        ) : (
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-            {dreamEntries.map((entry) => {
-              const insight = dreamInsights[entry.id];
-              const isLoading = loadingDreamId === entry.id;
-              return (
-                <article
-                  key={entry.id}
-                  className="flex flex-col justify-between rounded-xl border border-[#E4E6E0] bg-[#FAFBF8] p-4 dark:border-[#2B3732] dark:bg-[#161D1A]"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs font-semibold tabular-nums text-[#1F6E5C] dark:text-[#36A68C]">
-                        {entry.date}
-                      </span>
-                      {typeof entry.sleepHours === 'number' && (
-                        <span className="font-mono text-[11px] tabular-nums text-[#5C6762] dark:text-[#A3B0AA]">
-                          Sonno {entry.sleepHours}h
-                        </span>
-                      )}
-                    </div>
-                    <p className="mt-2 whitespace-pre-line text-xs leading-relaxed text-[#182420] dark:text-[#EAECE6]">
-                      {entry.dreamJournal}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 pt-2">
-                    {insight ? (
-                      <div className="rounded-lg border border-[#C6D5CE] bg-[#EDF3F0] p-3 text-xs leading-relaxed text-[#182420] dark:border-[#2F4E42] dark:bg-[#1F332C] dark:text-[#EAECE6]">
-                        <p className="mb-1 flex items-center gap-1.5 font-semibold text-[#1F6E5C] dark:text-[#36A68C]">
-                          <Sparkles className="h-3.5 w-3.5" />
-                          <span>Spunto PNL di Lucilla</span>
-                        </p>
-                        <p>{insight}</p>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled={loadingDreamId !== null}
-                        onClick={() =>
-                          handleRequestDreamInsight(entry.id, entry.dreamJournal || '', entry.date)
-                        }
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-[#1F6E5C] bg-white px-3 py-1.5 text-xs font-medium text-[#1F6E5C] hover:bg-[#EDF3F0] disabled:opacity-50 dark:border-[#36A68C] dark:bg-[#1B231F] dark:text-[#36A68C]"
-                      >
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <span>{isLoading ? 'Riflessione PNL...' : 'Spunto PNL di Lucilla'}</span>
-                      </button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </section>
+        checkins={checkins}
+        dreamInsights={dreamInsights}
+        onSaveDreamInsight={onSaveDreamInsight}
+        getIdToken={getIdToken}
+        onPrintDreams={onPrintDreams}
+      />
 
       {/* Row 3: Ruota della Vita (9 Areas) + Scale & Tape Measure */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">

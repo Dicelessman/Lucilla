@@ -474,6 +474,7 @@ export async function persistVoiceToolMutationToFirestore(
           'sleepQuality',
           'dreamJournal',
           'morningDomandeNotes',
+          'morningUsefulNotes',
           'kinestheticAnchorDone',
           'movementMinutes',
           'afternoonParachuteDone',

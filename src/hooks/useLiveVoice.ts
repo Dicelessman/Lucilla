@@ -10,7 +10,7 @@ export type LiveStatus = 'idle' | 'connecting' | 'active' | 'error';
 export type VoiceTransport = 'websocket' | 'turn';
 
 export interface LiveUiCommand {
-  tab?: 'oggi' | 'diario' | 'pnl' | 'report';
+  tab?: 'buongiorno' | 'oggi' | 'diario' | 'pnl' | 'report';
   openSosModal?: boolean;
   openRadioBorbottona?: boolean;
   notice?: string;

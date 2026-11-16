@@ -1,23 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Sun, Sunset, Moon, Check, AlertCircle, Sparkles, BookMarked, Droplets, ArrowUpRight } from 'lucide-react';
-import { DailyCheckin, EmotionReflectionType, WeeklyChallenge } from '../types/coach.ts';
-import { evaluateSleepBiology } from '../utils/bariclipRules.ts';
+import { Activity, Sunset, Moon, Check, Droplets, Sunrise } from 'lucide-react';
+import { DailyCheckin, EmotionReflectionType } from '../types/coach.ts';
 
 interface DailyRoutinesCardProps {
   todayDate: string;
   checkin: DailyCheckin;
-  activeChallenge: WeeklyChallenge;
   onSaveCheckin: (updated: DailyCheckin, xpDelta?: number) => void;
-  initialSubTab?: 'mattina' | 'pomeriggio' | 'sera';
+  initialSubTab?: 'movimento' | 'pomeriggio' | 'sera';
   todayMealsCount?: number;
   weeklyMovementMinutes?: number;
-  onOpenDreamArchive?: () => void;
+  onOpenBuongiorno?: () => void;
 }
 
-function resolveDefaultSubTabByHour(): 'mattina' | 'pomeriggio' | 'sera' {
+function resolveDefaultSubTabByHour(): 'movimento' | 'pomeriggio' | 'sera' {
   const now = new Date();
   const mins = now.getHours() * 60 + now.getMinutes();
-  if (mins >= 5 * 60 && mins < 14 * 60) return 'mattina';
+  if (mins >= 5 * 60 && mins < 14 * 60) return 'movimento';
   if (mins >= 14 * 60 && mins < 19 * 60 + 30) return 'pomeriggio';
   return 'sera';
 }
@@ -40,22 +38,17 @@ const RITUAL_OPTIONS = [
 export function DailyRoutinesCard({
   todayDate,
   checkin,
-  activeChallenge,
   onSaveCheckin,
   initialSubTab,
   todayMealsCount = 0,
   weeklyMovementMinutes = 0,
-  onOpenDreamArchive,
+  onOpenBuongiorno,
 }: DailyRoutinesCardProps) {
-  const [subTab, setSubTab] = useState<'mattina' | 'pomeriggio' | 'sera'>(
+  const [subTab, setSubTab] = useState<'movimento' | 'pomeriggio' | 'sera'>(
     () => initialSubTab ?? resolveDefaultSubTabByHour()
   );
 
-  // Morning state
-  const [sleepHours, setSleepHours] = useState<number>(checkin.sleepHours ?? 7);
-  const [sleepQuality, setSleepQuality] = useState<1 | 2 | 3 | 4 | 5>(checkin.sleepQuality ?? 4);
-  const [dreamJournal, setDreamJournal] = useState<string>(checkin.dreamJournal ?? '');
-  const [morningNotes, setMorningNotes] = useState<string>(checkin.morningDomandeNotes ?? '');
+  // Movement & anchor state
   const [anchorDone, setAnchorDone] = useState<boolean>(checkin.kinestheticAnchorDone ?? false);
   const [movementMinutes, setMovementMinutes] = useState<number>(checkin.movementMinutes ?? 20);
 
@@ -79,10 +72,6 @@ export function DailyRoutinesCard({
   const [savedNotice, setSavedNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    setSleepHours(checkin.sleepHours ?? 7);
-    setSleepQuality(checkin.sleepQuality ?? 4);
-    setDreamJournal(checkin.dreamJournal ?? '');
-    setMorningNotes(checkin.morningDomandeNotes ?? '');
     setAnchorDone(checkin.kinestheticAnchorDone ?? false);
     setMovementMinutes(checkin.movementMinutes ?? 20);
     setParachuteDone(checkin.afternoonParachuteDone ?? false);
@@ -94,7 +83,6 @@ export function DailyRoutinesCard({
     setRitualChoice(checkin.eveningRitualChoice ?? RITUAL_OPTIONS[0]);
   }, [checkin]);
 
-  const sleepAlert = evaluateSleepBiology(sleepHours);
   const hydrationGlasses = Math.max(0, checkin.hydrationGlasses ?? 0);
   const hydrationAwayDone = Boolean(checkin.hydrationAwayFromMealsDone);
   const morningDone = typeof checkin.sleepHours === 'number';
@@ -121,26 +109,19 @@ export function DailyRoutinesCard({
     }
   }
 
-  function handleSaveMorning(e: React.FormEvent) {
+  function handleSaveMovement(e: React.FormEvent) {
     e.preventDefault();
-    const hadDreamBefore = Boolean(checkin.dreamJournal?.trim());
-    const hasDreamNow = Boolean(dreamJournal.trim());
-    const xpBonus = !checkin.sleepHours ? 15 : 0 + (!hadDreamBefore && hasDreamNow ? 10 : 0);
-
+    const xpBonus = !checkin.kinestheticAnchorDone && anchorDone ? 10 : 0;
     onSaveCheckin(
       {
         ...checkin,
         date: todayDate,
-        sleepHours,
-        sleepQuality,
-        dreamJournal,
-        morningDomandeNotes: morningNotes,
         kinestheticAnchorDone: anchorDone,
         movementMinutes,
       },
       xpBonus
     );
-    notifySaved('Check-in Mattina & Sogni salvato.');
+    notifySaved('Movimento e ancora salvati.');
   }
 
   function handleSaveAfternoon(e: React.FormEvent) {
@@ -187,13 +168,13 @@ export function DailyRoutinesCard({
             Routine del Giorno
           </h2>
           <p className="text-xs text-[#5C6762] dark:text-[#A3B0AA]">
-            08:30 Mattina & Sogni · 17:15 Paracadute · 21:30 Chiusura
+            Movimento &amp; Ancora · 17:15 Paracadute · 21:30 Chiusura
           </p>
         </div>
 
         <div className="flex rounded-lg border border-[#E4E6E0] bg-[#F7F7F4] p-0.5 dark:border-[#2B3732] dark:bg-[#161D1A]">
           {[
-            { id: 'mattina' as const, label: '08:30 Mattina', icon: Sun },
+            { id: 'movimento' as const, label: 'Movimento', icon: Activity },
             { id: 'pomeriggio' as const, label: '17:15 Paracadute', icon: Sunset },
             { id: 'sera' as const, label: '21:30 Sera', icon: Moon },
           ].map((tab) => {
@@ -226,9 +207,22 @@ export function DailyRoutinesCard({
           <span className="font-semibold text-[#182420] dark:text-[#EAECE6]">
             Prontezza del Giorno:
           </span>
-          <span className={morningDone ? 'font-medium text-[#1F6E5C] dark:text-[#36A68C]' : ''}>
-            {morningDone ? '✓ Mattina' : '○ Mattina'}
-          </span>
+          {onOpenBuongiorno ? (
+            <button
+              type="button"
+              onClick={onOpenBuongiorno}
+              className={`inline-flex items-center gap-1 hover:underline ${
+                morningDone ? 'font-medium text-[#1F6E5C] dark:text-[#36A68C]' : ''
+              }`}
+            >
+              <Sunrise className="h-3 w-3" />
+              <span>{morningDone ? '✓ Buongiorno' : '○ Buongiorno'}</span>
+            </button>
+          ) : (
+            <span className={morningDone ? 'font-medium text-[#1F6E5C] dark:text-[#36A68C]' : ''}>
+              {morningDone ? '✓ Buongiorno' : '○ Buongiorno'}
+            </span>
+          )}
           <span
             className={`font-mono tabular-nums ${
               hydrationGlasses >= 6 && hydrationAwayDone
@@ -254,7 +248,7 @@ export function DailyRoutinesCard({
           </span>
         </div>
 
-        {/* Bariclip Hydration away-from-meals quick bar */}
+        {/* Hydration away-from-meals quick bar */}
         <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E4E6E0] bg-white px-3 py-2 dark:border-[#2B3732] dark:bg-[#1B231F]">
           <div className="flex items-center gap-2">
             <Droplets className="h-4 w-4 shrink-0 text-[#1F6E5C] dark:text-[#36A68C]" />
@@ -304,133 +298,18 @@ export function DailyRoutinesCard({
         </div>
       )}
 
-      {/* 08:30 MORNING + DREAM JOURNAL */}
-      {subTab === 'mattina' && (
-        <form onSubmit={handleSaveMorning} className="space-y-4 p-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="sleep-hours"
-                className="block text-xs font-medium text-[#182420] dark:text-[#EAECE6]"
-              >
-                Ore di sonno stanotte
-              </label>
-              <div className="mt-1.5 flex items-center gap-3">
-                <input
-                  id="sleep-hours"
-                  type="number"
-                  step="0.5"
-                  min="2"
-                  max="12"
-                  value={sleepHours}
-                  onChange={(e) => setSleepHours(Number(e.target.value))}
-                  className="w-24 rounded-lg border border-[#D7DBD2] bg-white px-3 py-2 font-mono text-sm tabular-nums text-[#182420] focus:border-[#1F6E5C] focus:outline-none dark:border-[#33423C] dark:bg-[#161D1A] dark:text-[#EAECE6]"
-                />
-                <span className="text-xs text-[#5C6762] dark:text-[#A3B0AA]">
-                  ore (soglia fisiologica: 6h)
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <span className="block text-xs font-medium text-[#182420] dark:text-[#EAECE6]">
-                Qualità riposo (1–5)
-              </span>
-              <div className="mt-1.5 flex gap-1.5">
-                {([1, 2, 3, 4, 5] as const).map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    onClick={() => setSleepQuality(q)}
-                    className={`h-9 w-9 rounded-lg font-mono text-xs font-medium tabular-nums transition-colors ${
-                      sleepQuality === q
-                        ? 'bg-[#1F6E5C] text-white'
-                        : 'border border-[#D7DBD2] bg-white text-[#5C6762] hover:text-[#182420] dark:border-[#33423C] dark:bg-[#161D1A] dark:text-[#A3B0AA]'
-                    }`}
-                  >
-                    {q}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {sleepAlert.isShortSleep && (
-            <div className="rounded-lg border border-[#F3D09B] bg-[#FFFBEB] p-3.5 text-xs text-[#92400E] dark:border-[#78350F] dark:bg-[#292011] dark:text-[#FDE68A]">
-              <div className="flex items-center gap-1.5 font-semibold text-[#B45309] dark:text-[#FBBF24]">
-                <AlertCircle className="h-4 w-4" />
-                <span>{sleepAlert.title}</span>
-              </div>
-              <p className="mt-1 leading-relaxed">{sleepAlert.physiologySummary}</p>
-              <p className="mt-1.5 font-medium text-[#78350F] dark:text-[#FCD34D]">
-                {sleepAlert.gentleAction}
-              </p>
-            </div>
-          )}
-
-          {/* Dream Journal Section */}
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <label
-                htmlFor="dream-journal"
-                className="flex items-center gap-1.5 text-xs font-medium text-[#182420] dark:text-[#EAECE6]"
-              >
-                <BookMarked className="h-3.5 w-3.5 text-[#1F6E5C] dark:text-[#36A68C]" />
-                <span>Diario dei Sogni (spazio libero del mattino)</span>
-              </label>
-              {onOpenDreamArchive && (
-                <button
-                  type="button"
-                  onClick={onOpenDreamArchive}
-                  className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1F6E5C] hover:underline dark:text-[#36A68C]"
-                >
-                  <span>Archivio Sogni &amp; Spunti PNL</span>
-                  <ArrowUpRight className="h-3 w-3" />
-                </button>
-              )}
-            </div>
-            <textarea
-              id="dream-journal"
-              rows={2}
-              value={dreamJournal}
-              onChange={(e) => setDreamJournal(e.target.value)}
-              placeholder="Annota liberamente immagini, sensazioni o frammenti di sogni di questa notte..."
-              className="mt-1.5 w-full rounded-lg border border-[#D7DBD2] bg-white px-3 py-2 text-sm text-[#182420] placeholder:text-[#8A948E] focus:border-[#1F6E5C] focus:outline-none dark:border-[#33423C] dark:bg-[#161D1A] dark:text-[#EAECE6]"
-            />
-          </div>
-
-          {/* 2 Domande Utili of the Week */}
-          <div className="rounded-lg border border-[#E4E6E0] bg-[#F8F9F6] p-3.5 dark:border-[#2B3732] dark:bg-[#161D1A]">
-            <p className="text-xs font-semibold text-[#1F6E5C] dark:text-[#36A68C]">
-              Domande Utili della settimana ({activeChallenge.title})
-            </p>
-            <ul className="mt-1.5 space-y-1 text-xs text-[#182420] dark:text-[#EAECE6]">
-              <li>1. {activeChallenge.domandaUtile1}</li>
-              <li>2. {activeChallenge.domandaUtile2}</li>
-            </ul>
-            <label htmlFor="morning-domande" className="sr-only">
-              La tua risposta alle domande utili
-            </label>
-            <input
-              id="morning-domande"
-              type="text"
-              value={morningNotes}
-              onChange={(e) => setMorningNotes(e.target.value)}
-              placeholder="Scrivi un pensiero guida in positivo per la giornata..."
-              className="mt-2.5 w-full rounded-lg border border-[#D7DBD2] bg-white px-3 py-1.5 text-xs text-[#182420] focus:border-[#1F6E5C] focus:outline-none dark:border-[#33423C] dark:bg-[#1B231F] dark:text-[#EAECE6]"
-            />
-          </div>
-
-          {/* Ancora Cinestesica + Movement */}
-          <div className="flex flex-col gap-3 rounded-lg border border-[#E4E6E0] p-3.5 sm:flex-row sm:items-center sm:justify-between dark:border-[#2B3732]">
+      {/* MOVEMENT & KINESTHETIC ANCHOR */}
+      {subTab === 'movimento' && (
+        <form onSubmit={handleSaveMovement} className="space-y-4 p-5">
+          <div className="flex flex-col gap-3 rounded-lg border border-[#E4E6E0] p-4 sm:flex-row sm:items-center sm:justify-between dark:border-[#2B3732]">
             <div className="flex-1">
               <p className="text-xs font-semibold text-[#182420] dark:text-[#EAECE6]">
                 Ancora Cinestesica &amp; Dopo nel Prima
               </p>
-              <p className="mt-0.5 text-xs text-[#5C6762] dark:text-[#A3B0AA]">
+              <p className="mt-1 text-xs leading-relaxed text-[#5C6762] dark:text-[#A3B0AA]">
                 Unisci pollice e indice per 10 secondi visualizzandoti leggero dopo 20 min di movimento piacevole (obiettivo 150 min/sett).
               </p>
-              <label className="mt-2 inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-[#182420] dark:text-[#EAECE6]">
+              <label className="mt-2.5 inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-[#182420] dark:text-[#EAECE6]">
                 <input
                   type="checkbox"
                   checked={anchorDone}
@@ -463,10 +342,9 @@ export function DailyRoutinesCard({
           <div className="flex justify-end">
             <button
               type="submit"
-              className="inline-flex items-center gap-2 rounded-lg bg-[#1F6E5C] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#185849]"
+              className="rounded-lg bg-[#1F6E5C] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#185849]"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Salva Mattina &amp; Sogni</span>
+              Salva Movimento &amp; Ancora
             </button>
           </div>
         </form>

@@ -123,7 +123,8 @@ test('getLearningStage and calculateSosXp progress properly across NLP 4 stages'
 test('calculateBmi and calculateWeeklyProteinCounts and report generation', () => {
   assert.equal(calculateBmi(126, 184), 37.2);
   const seed = createInitialSeedState();
-  const counts = calculateWeeklyProteinCounts(seed.meals, new Date().toISOString().slice(0, 10));
+  const latestMealDate = seed.meals[seed.meals.length - 1].date;
+  const counts = calculateWeeklyProteinCounts(seed.meals, latestMealDate);
   const pesce = counts.find((c) => c.category === 'pesce');
   assert.ok(pesce && pesce.current >= 1);
 

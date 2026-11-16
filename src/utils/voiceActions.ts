@@ -29,7 +29,7 @@ export interface VoiceToolExecutionResult {
   nextState: CoachState;
   toolResult: Record<string, unknown>;
   uiCommand?: {
-    tab?: 'oggi' | 'diario' | 'pnl' | 'report';
+    tab?: 'buongiorno' | 'oggi' | 'diario' | 'pnl' | 'report';
     openSosModal?: boolean;
     openRadioBorbottona?: boolean;
     notice?: string;
@@ -132,6 +132,10 @@ export function executeVoiceTool(
           args.morningDomandeNotes !== undefined
             ? String(args.morningDomandeNotes)
             : existing.morningDomandeNotes,
+        morningUsefulNotes:
+          args.morningUsefulNotes !== undefined
+            ? String(args.morningUsefulNotes)
+            : existing.morningUsefulNotes,
         kinestheticAnchorDone:
           args.kinestheticAnchorDone !== undefined
             ? Boolean(args.kinestheticAnchorDone)
@@ -431,7 +435,7 @@ export function executeVoiceTool(
     }
 
     case 'navigate_or_open_tool': {
-      const tab = args.tab as 'oggi' | 'diario' | 'pnl' | 'report' | undefined;
+      const tab = args.tab as 'buongiorno' | 'oggi' | 'diario' | 'pnl' | 'report' | undefined;
       const openSosModal = Boolean(args.openSosModal);
       const openRadioBorbottona = Boolean(args.openRadioBorbottona);
       return {
